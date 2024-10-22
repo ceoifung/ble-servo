@@ -44,3 +44,16 @@ dependencies {
 
     implementation("com.github.Jasonchenlijian:FastBle:2.4.0")
 }
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "com.xiaor.libservo"
+            artifactId = "lib-ble-servo"
+            version = "1.0.0"
+            afterEvaluate {
+                artifact(tasks.getByName("bundleReleaseAar"))
+            }
+        }
+    }
+}
