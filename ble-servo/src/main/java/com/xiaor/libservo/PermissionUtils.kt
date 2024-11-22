@@ -11,9 +11,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
 /**
- * <pre>
+ *
  * 权限申请工具类
-</pre> *
  */
 object PermissionUtils {
     /**

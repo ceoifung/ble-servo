@@ -6,12 +6,12 @@ package com.xiaor.libservo
  *     horizontalAngle: 水平云台电机角度
  *     verticalAngle: 垂直云台电机角度
  *     batteryVoltage: 电池电压
- *
- *
+ *     isHorizontalInCtl: 水平云台电机受控状态和非受控状态，true为受控，false为非受控
+ *     isVerticalInCtl: 垂直云台电机受控状态和非受控状态，true为受控，false为非受控
  *
  */
-data class BoardMsg(var horizontalAngle:Int, var verticalAngle:Int,var batteryVoltage:Int
-    )
+data class BoardMsg(var horizontalAngle:Int, var verticalAngle:Int,var batteryVoltage:Int,
+    var isHorizontalInCtl: Boolean, var isVerticalInCtl: Boolean)
 
 /**
  * 控制板按键状态事件
@@ -41,5 +41,6 @@ enum class PowerStatus{
  * 按键消息
  * @param id 获取按下的是哪一个按键
  * @param status 获取按键的状态
+ * @see KeyStatus
  */
 data class KeyMsg(var id:Int, var status: KeyStatus)

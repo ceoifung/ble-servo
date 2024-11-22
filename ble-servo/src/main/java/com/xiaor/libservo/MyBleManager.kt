@@ -34,6 +34,9 @@ class MyBleManager {
     private val uuidCharacteristicNotify = "0000ffe1-0000-1000-8000-00805f9b34fb"
     private val bleName = "XiaoRGEEK"
 
+//    近场连接蓝牙的信号要求强度
+    var nearRssi = -90
+
 
     private fun addPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -132,8 +135,8 @@ class MyBleManager {
             }
 
             override fun onScanning(bleDevice: BleDevice) {
-                if (bleDevice.name == bleName) {
-                    if (bleDevice.rssi >= -90) {
+                if (bleDevice.name.startsWith(bleName, true)) {
+                    if (bleDevice.rssi >= nearRssi) {
                         myBleDevice = bleDevice
                         connectBle()
                     }
@@ -229,15 +232,15 @@ class MyBleManager {
      * @param data bytes数组
      */
     fun writeData(data: ByteArray){
-        Log.i(TAG, "writeData: data=${data.joinToString(separator = "") { byte ->
-            "%02x ".format(byte)
-        }}")
+//        Log.i(TAG, "writeData: data=${data.joinToString(separator = "") { byte ->
+//            "%02x ".format(byte)
+//        }}")
         if (!isBleEnable()) {
-            println("bluetooth not enable")
+            Log.e(TAG, "writeData: bluetooth not enable" )
             return
         }
         if (myBleDevice == null) {
-            println("Not yet scan ble device")
+            Log.e(TAG,"writeData: Not yet scan ble device")
             return
         }
         Thread{

@@ -1,5 +1,6 @@
 package com.xiaor.libservo
 
+import android.util.Log
 import kotlin.math.max
 import kotlin.math.min
 
@@ -8,12 +9,14 @@ object BleWrapper {
     private var currentY = 90
     private var listener: IMessageCallbackListener?=null
 
+    private const val TAG = "BleWrapper"
+
     private fun combineHighAndLowBits(highBits: Byte, lowBits: Byte): Int {
         return (highBits.toInt() shl 8) or lowBits.toInt()
     }
 
     /**
-     * 解析回传数据
+     * 解析回传数据，在蓝牙接收事件中调用
      * @param data
      */
     fun requestDataDecode(data: ByteArray){
@@ -26,11 +29,13 @@ object BleWrapper {
                         val crc = Protocol.calculateCRC(crcArray, crcArray.size)
                         if (crc == data[data.size - 3]) {
                             println("crc校验通过")
-                            if (data[4] == 6.toByte()) {
+                            if (data[4] == 8.toByte()) {
                                 val boardMsg = BoardMsg(
                                     combineHighAndLowBits(data[5], data[6]),
                                     combineHighAndLowBits(data[7], data[8]),
                                     combineHighAndLowBits(data[9], data[10]),
+                                    data[11] == 0x01.toByte(),
+                                    data[12] == 0x01.toByte()
                                 )
                                 listener?.onBoardStatusCallback(boardMsg)
                             }
@@ -48,7 +53,7 @@ object BleWrapper {
                     }
                 }
             }else{
-                    println("crc 校验失败")
+                Log.e(TAG, "requestDataDecode: crc 校验失败" )
 
             }
         }
@@ -57,11 +62,35 @@ object BleWrapper {
 
     /**
      * 设置角度
-     * @param value
      */
-    private fun setAngle(value: Int){
-        MyBleManager.getDefault().writeData(Protocol.createMessage(Protocol.TYPE_SERVO, Protocol.CTL_SERVO, 2,
-            ((value shr 8) and 0xFF).toByte(), (value and 0xff).toByte()))
+    private fun setAngle(){
+        MyBleManager.getDefault().writeData(Protocol.createMessage(Protocol.TYPE_SERVO, Protocol.CTL_SERVO, 4,
+            ((currentX shr 8) and 0xFF).toByte(), (currentX and 0xff).toByte(),
+            ((currentY shr 8) and 0xFF).toByte(), (currentY and 0xff).toByte()))
+    }
+
+    /**
+     * 设置水平和云台电机的角度
+     * @param horizontalAngle 水平电机角度
+     * @param verticalAngle 垂直电机角度
+     */
+    fun setMotorMoveAngle(horizontalAngle: Int, verticalAngle: Int){
+        currentX = max(0, min(180, horizontalAngle))
+        currentY = max(0, min(180, verticalAngle))
+        setAngle()
+    }
+
+    /**
+     * 以步幅的形式设置水平和云台电机的角度
+     * @param horizontalStep 水平电机角度的步幅
+     * @param verticalStep 垂直电机角度的步幅
+     */
+    fun setMotorMoveStep(horizontalStep: Int, verticalStep: Int){
+        currentX += horizontalStep
+        currentX = max(0, min(180, currentX))
+        currentY += verticalStep
+        currentY = max(0, min(180, currentY))
+        setAngle()
     }
 
     /**
@@ -72,7 +101,7 @@ object BleWrapper {
         //这个跟您原先的接口保持一致,但需要一个当前角度的返回值,
         //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
         currentX = max(0, min(180, angle))
-        setAngle(currentX)
+        setAngle()
         return currentX
     }
 
@@ -84,7 +113,7 @@ object BleWrapper {
         //这个跟您原先的接口保持一致,但需要一个当前角度的返回值,
         //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
         currentY = max(0, min(180, angle))
-        setAngle(currentY)
+        setAngle()
         return currentY
     }
 
@@ -97,7 +126,7 @@ object BleWrapper {
         //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
         currentX += step
         currentX = max(0, min(180, currentX))
-        setAngle(currentX)
+        setAngle()
         return currentX
     }
 
@@ -110,12 +139,13 @@ object BleWrapper {
         //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
         currentY += step
         currentY = max(0, min(180, currentX))
-        setAngle(currentY)
+        setAngle()
         return currentY
     }
 
     /**
      * 获取当前的角度，这个是上面设置的，底部的不一定是这个角度，用registerMessageCallback实时监听底部数据回传
+     * @see registerMessageCallback
      */
     fun getCurrentHorizontalAngle(): Int {
         //获取当前的角度,方便复位,我们可以自己算出初始位置和现在角度的差距,
@@ -125,6 +155,7 @@ object BleWrapper {
 
     /**
      * 获取当前的角度，这个是上面设置的，底部的不一定是这个角度，用registerMessageCallback实时监听底部数据回传
+     * @see registerMessageCallback
      */
     fun getCurrentVerticalAngle(): Int {
         //获取当前的角度,方便复位,我们可以自己算出初始位置和现在角度的差距,
@@ -133,7 +164,7 @@ object BleWrapper {
     }
 
     /**
-     * 设置灯光
+     * 设置全部彩灯灯光
      * @param color 相关的颜色
      * @see LightColor
      */
@@ -175,6 +206,7 @@ object BleWrapper {
     /**
      * 注册蓝牙消息监听器
      * @param callback IMessageCallbackListener
+     * @see IMessageCallbackListener
      */
     fun registerMessageCallback(callback: IMessageCallbackListener){
         listener = callback
@@ -183,18 +215,21 @@ object BleWrapper {
     interface IMessageCallbackListener{
         /**
          * 板子状态消息回调
+         * @see BoardMsg
          */
         fun onBoardStatusCallback(boardMsg: BoardMsg)
 
         /**
          * 按键的的回调
          * @param keyMsg
+         * @see KeyMsg
          */
         fun onKeyStatusCallback(keyMsg: KeyMsg)
 
         /**
          * 开关机按键的回调
          * @param powerStatus
+         * @see PowerStatus
          */
         fun onPowerStatusCallback(powerStatus: PowerStatus)
 
