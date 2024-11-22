@@ -2,8 +2,8 @@ plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("maven-publish")
+    id("org.jetbrains.dokka")
 }
-
 android {
     namespace = "com.xiaor.libservo"
     compileSdk = 33
@@ -45,6 +45,7 @@ dependencies {
     implementation("com.github.Jasonchenlijian:FastBle:2.4.0"){
         isTransitive = true
     }
+
 }
 
 publishing {
@@ -54,7 +55,20 @@ publishing {
             artifactId = "lib-ble-servo"
             version = "1.0.0"
             afterEvaluate {
+//                from(components["release"])
                 artifact(tasks.getByName("bundleReleaseAar"))
+//                pom.withXml {
+//                    val dependenciesNode = asNode().appendNode("dependencies")
+//                    configurations.api.get().allDependencies.forEach { dep ->
+//                        if (dep.group != null && dep.version != null) {
+//                            val dependencyNode = dependenciesNode.appendNode("dependency")
+//                            println(dep.group + ":" + dep.name + ":" + dep.version)
+//                            dependencyNode.appendNode("groupId", dep.group)
+//                            dependencyNode.appendNode("artifactId", dep.name)
+//                            dependencyNode.appendNode("version", dep.version)
+//                        }
+//                    }
+//                }
             }
         }
     }

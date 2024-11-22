@@ -14,4 +14,18 @@ class ExampleUnitTest {
     fun addition_isCorrect() {
         assertEquals(4, 2 + 2)
     }
+
+    @OptIn(ExperimentalStdlibApi::class)
+    @Test
+    fun test_protocol(){
+        val data = Protocol.createMessage(2,3,2,4,5)
+
+        data.forEach {
+            print("${it.toHexString(HexFormat.UpperCase)},")
+        }
+        val data1 = byteArrayOf(2, 3, 2, 4, 5)
+        val len = data1.size
+        val crc = Protocol.calculateCRC(data1, len)
+        println("CRC in Kotlin: ${crc.toInt()}")
+    }
 }

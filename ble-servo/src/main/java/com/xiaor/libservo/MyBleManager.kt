@@ -190,6 +190,7 @@ class MyBleManager {
      * @param context
      * @param data byte[] 数组
      */
+    @Deprecated("do not need context", replaceWith = ReplaceWith("writeData(data)"))
     fun writeData(context: Context, data: ByteArray) {
         if (!isBleEnable()) {
             enableBle(context)
@@ -216,8 +217,54 @@ class MyBleManager {
             })
     }
 
+    @Deprecated(message = "do not need context",
+        replaceWith = ReplaceWith("writeData(data.toByteArray())")
+    )
     fun writeData(context: Context, data: String) {
         writeData(context, data.toByteArray())
+    }
+
+    /**
+     * 发送数据
+     * @param data bytes数组
+     */
+    fun writeData(data: ByteArray){
+        Log.i(TAG, "writeData: data=${data.joinToString(separator = "") { byte ->
+            "%02x ".format(byte)
+        }}")
+        if (!isBleEnable()) {
+            println("bluetooth not enable")
+            return
+        }
+        if (myBleDevice == null) {
+            println("Not yet scan ble device")
+            return
+        }
+        Thread{
+            BleManager.getInstance().write(
+                myBleDevice,
+                uuidService,
+                uuidCharacteristicWrite,
+                data,
+                false,
+                object : BleWriteCallback() {
+                    override fun onWriteSuccess(current: Int, total: Int, justWrite: ByteArray) {
+                        Log.d(TAG, "onWriteSuccess: write success")
+                    }
+
+                    override fun onWriteFailure(exception: BleException) {
+                        Log.e(TAG, "onWriteFailure: ${exception.description}")
+                    }
+                })
+        }.start()
+    }
+
+    /**
+     * 发送数据
+     * @param data
+     */
+    fun writeData(data: String){
+        writeData(data.toByteArray())
     }
 
     fun startNotify() {
@@ -238,6 +285,7 @@ class MyBleManager {
                 override fun onCharacteristicChanged(data: ByteArray) {
                     if (data.isNotEmpty()) {
                         Log.d(TAG, "onCharacteristicChanged: " + String(data))
+                        BleWrapper.requestDataDecode(data)
                     }
                 }
             })
@@ -289,23 +337,6 @@ class MyBleManager {
 
     private var bleReceiver: BleReceiver? = null
     private var bleStatusListener: BleStatusListener? = null
-    private val servoUtils = XRServoUtils()
-
-    fun setHorizontalMoveAngle(context: Context, angle: Int) {
-        writeData(context, servoUtils.createHorizontalMoveAngle(angle))
-    }
-
-    fun setVerticalMoveAngle(context: Context, angle: Int) {
-        writeData(context, servoUtils.createVerticalMoveAngle(angle))
-    }
-
-    fun setHorizontalMoveStep(context: Context, step: Int) {
-        writeData(context, servoUtils.createHorizontalMoveStep(step))
-    }
-
-    fun setVerticalMoveStep(context: Context, step: Int) {
-        writeData(context, servoUtils.createVerticalMoveStep(step))
-    }
 
 
     /**

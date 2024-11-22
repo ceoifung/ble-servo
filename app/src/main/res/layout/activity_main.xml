@@ -7,27 +7,102 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
-
-    <Button
-        android:id="@+id/btnConnectBle"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="连接蓝牙"/>
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:orientation="horizontal">
+        <Button
+            android:id="@+id/btnConnectBle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="连接蓝牙"/>
+    </LinearLayout>
 
-    <SeekBar
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
-        android:id="@+id/hSeekbar"
-        android:layout_width="180dp"
-        android:layout_height="wrap_content"
-        android:max="180"
-        android:min="0"/>
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="水平云台电机"/>
+        <SeekBar
+            android:id="@+id/hSeekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="180"
+            android:min="0"/>
+    </LinearLayout>
 
-    <SeekBar
-        android:id="@+id/vSeekbar"
-        android:layout_marginTop="20dp"
-        android:layout_width="180dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:max="180"
-        android:min="0"/>
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="垂直云台电机"/>
+        <SeekBar
+            android:id="@+id/vSeekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="180"
+            android:min="0"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="单色控制"/>
+        <Spinner
+            android:id="@+id/singlePosSpinner"
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:entries="@array/lights"/>
+        <Spinner
+            android:id="@+id/singleModeSpinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:entries="@array/lights_mode"/>
+        <Button
+            android:id="@+id/btnSendLight"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="发送"/>
+
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="全色控制"/>
+        <Spinner
+            android:id="@+id/modeSpinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:entries="@array/lights_mode"/>
+        <Button
+            android:id="@+id/btnSendAll"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="发送"/>
+
+    </LinearLayout>
+    <TextView
+        android:id="@+id/tvLog"
+        android:layout_marginTop="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 
 </androidx.appcompat.widget.LinearLayoutCompat>
