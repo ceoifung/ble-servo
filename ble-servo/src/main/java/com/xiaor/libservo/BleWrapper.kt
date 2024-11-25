@@ -97,50 +97,46 @@ object BleWrapper {
      * 设置水平云台舵机角度
      * @param angle
      */
-    fun setHorizontalMoveAngle(angle: Int): Int {
+    fun setHorizontalMoveAngle(angle: Int) {
         //这个跟您原先的接口保持一致,但需要一个当前角度的返回值,
         //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
         currentX = max(0, min(180, angle))
         setAngle()
-        return currentX
     }
 
     /**
      * 设置垂直云台舵机角度
      * @param angle
      */
-    fun setVerticalMoveAngle(angle: Int): Int {
+    fun setVerticalMoveAngle(angle: Int) {
         //这个跟您原先的接口保持一致,但需要一个当前角度的返回值,
         //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
         currentY = max(0, min(180, angle))
         setAngle()
-        return currentY
     }
 
     /**
      * 设置水平云台舵机步幅
      * @param step 步幅
      */
-    fun setHorizontalMoveStep(step: Int): Int {
+    fun setHorizontalMoveStep(step: Int){
         //这个跟您原先的接口保持一致,但需要一个当前角度的返回值,
         //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
         currentX += step
         currentX = max(0, min(180, currentX))
         setAngle()
-        return currentX
     }
 
     /**
      * 设置垂直云台舵机步幅
      * @param step 步幅
      */
-    fun setVerticalMoveStep(step: Int): Int {
+    fun setVerticalMoveStep(step: Int) {
         //这个跟您原先的接口保持一致,但需要一个当前角度的返回值,
         //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
         currentY += step
         currentY = max(0, min(180, currentX))
         setAngle()
-        return currentY
     }
 
     /**
