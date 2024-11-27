@@ -33,6 +33,7 @@ class MyBleManager {
     private val uuidCharacteristicWrite = "0000ffe1-0000-1000-8000-00805f9b34fb"
     private val uuidCharacteristicNotify = "0000ffe1-0000-1000-8000-00805f9b34fb"
     private val bleName = "XiaoRGEEK"
+    private var isRequestPermissions = false
 
 //    近场连接蓝牙的信号要求强度
     var nearRssi = -90
@@ -78,14 +79,18 @@ class MyBleManager {
                         }
                     } else {
                         Log.e(TAG, "onHasPermission: not has permission")
+                        if (isRequestPermissions){
+                            return
+                        }
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            Log.e(TAG, "enableBle: request permissions")
+                            Log.d(TAG, "enableBle: request permissions")
                             PermissionUtils.requestMorePermissions(
                                 context, arrayOf(
                                     Manifest.permission.BLUETOOTH_CONNECT,
                                     Manifest.permission.BLUETOOTH_SCAN
                                 ), XRConstant.BLE_REQUEST_CODE
                             )
+                            isRequestPermissions = true
                         }
                     }
                 }
@@ -394,7 +399,12 @@ class MyBleManager {
             registerBleReceiver(context, listener)
         } else if (requestCode == XRConstant.BLE_SCAN_REQUEST) {
             Log.d(TAG, "onRequestPermissionsResult: scan ble")
-            scanAndConnectBle(context)
+            if (!isRequestPermissions){
+                scanAndConnectBle(context)
+                isRequestPermissions = true
+            }else{
+                Log.e(TAG, "onRequestPermissionsResult: 重复申请" )
+            }
         }
 
     }
