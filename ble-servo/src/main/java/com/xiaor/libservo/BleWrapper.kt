@@ -29,7 +29,7 @@ object BleWrapper {
                         val crc = Protocol.calculateCRC(crcArray, crcArray.size)
                         if (crc == data[data.size - 3]) {
                             println("crc校验通过")
-                            if (data[4] == 8.toByte()) {
+                            if (data[4] >= 8.toByte()) {
                                 val boardMsg = BoardMsg(
                                     combineHighAndLowBits(data[5], data[6]),
                                     combineHighAndLowBits(data[7], data[8]),
@@ -61,10 +61,22 @@ object BleWrapper {
     }
 
     /**
+     * 发送数据，如果没有连接程序会抛异常
+     * @param bytes 字节数组命令
+     */
+    private fun writeData(bytes: ByteArray) {
+        try {
+            MyBleManager.getDefault().writeData(bytes)
+        }catch (ex: Exception){
+            Log.e(TAG, "writeData: ${ex.message}" )
+        }
+    }
+
+    /**
      * 设置角度
      */
     private fun setAngle(){
-        MyBleManager.getDefault().writeData(Protocol.createMessage(Protocol.TYPE_SERVO, Protocol.CTL_SERVO, 4,
+        writeData(Protocol.createMessage(Protocol.TYPE_SERVO, Protocol.CTL_SERVO, 4,
             ((currentX shr 8) and 0xFF).toByte(), (currentX and 0xff).toByte(),
             ((currentY shr 8) and 0xFF).toByte(), (currentY and 0xff).toByte()))
     }
@@ -165,7 +177,7 @@ object BleWrapper {
      * @see LightColor
      */
     fun setLight(color: LightColor) {
-        MyBleManager.getDefault().writeData(Protocol.createMessage(Protocol.TYPE_LIGHT,
+        writeData(Protocol.createMessage(Protocol.TYPE_LIGHT,
             Protocol.CTL_LIGHT,3,2,20, color.getColor()))
     }
 
@@ -177,7 +189,7 @@ object BleWrapper {
      */
     fun setSingleLight(position: Int, color: LightColor){
         val pos = max(1, min(20, position))
-        MyBleManager.getDefault().writeData(Protocol.createMessage(Protocol.TYPE_LIGHT,
+        writeData(Protocol.createMessage(Protocol.TYPE_LIGHT,
             Protocol.CTL_LIGHT,3,4,pos.toByte(), color.getColor()))
     }
 
@@ -195,7 +207,7 @@ object BleWrapper {
      * @see MotorDef 电机定义型号
      */
     fun stopMove(motor: MotorDef){
-        MyBleManager.getDefault().writeData(Protocol.createMessage(Protocol.TYPE_SERVO, Protocol.CTL_STOP,
+        writeData(Protocol.createMessage(Protocol.TYPE_SERVO, Protocol.CTL_STOP,
             1, motor.getMotorId()))
     }
 

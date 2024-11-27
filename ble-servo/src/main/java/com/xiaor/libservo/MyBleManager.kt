@@ -135,10 +135,12 @@ class MyBleManager {
             }
 
             override fun onScanning(bleDevice: BleDevice) {
-                if (bleDevice.name.startsWith(bleName, true)) {
-                    if (bleDevice.rssi >= nearRssi) {
-                        myBleDevice = bleDevice
-                        connectBle()
+                if (bleDevice.name != null){
+                    if(bleDevice.name.startsWith(bleName, true)) {
+                        if (bleDevice.rssi >= nearRssi) {
+                            myBleDevice = bleDevice
+                            connectBle()
+                        }
                     }
                 }
             }
@@ -232,16 +234,13 @@ class MyBleManager {
      * @param data bytes数组
      */
     fun writeData(data: ByteArray){
-//        Log.i(TAG, "writeData: data=${data.joinToString(separator = "") { byte ->
-//            "%02x ".format(byte)
-//        }}")
         if (!isBleEnable()) {
-            Log.e(TAG, "writeData: bluetooth not enable" )
-            return
+            bleStatusListener?.onStatusChanged(BleStatus.NOT_ENABLED)
+            throw Exception("bluetooth not enable")
         }
         if (myBleDevice == null) {
-            Log.e(TAG,"writeData: Not yet scan ble device")
-            return
+            bleStatusListener?.onStatusChanged(BleStatus.NOT_YET_CONNECTED)
+            throw Exception("Not yet connect device")
         }
         Thread{
             BleManager.getInstance().write(
@@ -452,6 +451,9 @@ class MyBleManager {
 
                         BluetoothAdapter.STATE_OFF -> {
                             Log.e(TAG, "onReceive: STATE_OFF")
+//                            如果人为关闭蓝牙，那么直接断开连接，并通知上层应用
+                            getDefault().bleStatusListener?.onStatusChanged(BleStatus.DISCONNECTED)
+                            getDefault().myBleDevice = null
                         }
                     }
                 }
