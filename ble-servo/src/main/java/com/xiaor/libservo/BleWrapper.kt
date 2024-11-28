@@ -183,12 +183,12 @@ object BleWrapper {
 
     /**
      * 设置单个彩灯的亮灭
-     * @param position 位置
+     * @param position 位置，0代表电量灯
      * @param color 颜色，LightColor
      * @see LightColor 颜色通道枚举类型
      */
     fun setSingleLight(position: Int, color: LightColor){
-        val pos = max(1, min(20, position))
+        val pos = max(0, min(20, position))
         writeData(Protocol.createMessage(Protocol.TYPE_LIGHT,
             Protocol.CTL_LIGHT,3,4,pos.toByte(), color.getColor()))
     }

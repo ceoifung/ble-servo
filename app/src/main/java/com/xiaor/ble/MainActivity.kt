@@ -67,19 +67,19 @@ class MainActivity : AppCompatActivity() {
         BleWrapper.registerMessageCallback(object :BleWrapper.IMessageCallbackListener{
 
             override fun onBoardStatusCallback(boardMsg: BoardMsg) {
-                appendLog("收到解析数据${boardMsg}")
+                appendLog("收到解析数据：${boardMsg}")
             }
 
             override fun onKeyStatusCallback(keyMsg: KeyMsg) {
-                appendLog("收到按键数据${keyMsg}")
+                appendLog("收到按键数据：${keyMsg}")
             }
 
             override fun onPowerStatusCallback(powerStatus: PowerStatus) {
-                appendLog("收到开关机数据${powerStatus}")
+                appendLog("收到开关机数据：${powerStatus}")
             }
 
             override fun onRawDataCallback(data: ByteArray) {
-                appendLog("收到原始数据${data.joinToString(separator = "") { byte ->
+                appendLog("收到原始数据：${data.joinToString(separator = "") { byte ->
                     "%02x ".format(byte)
                 }}")
             }
@@ -93,7 +93,7 @@ class MainActivity : AppCompatActivity() {
         val allSpinner = findViewById<Spinner>(R.id.modeSpinner)
 
         findViewById<Button>(R.id.btnSendLight).setOnClickListener {
-            BleWrapper.setSingleLight(singlePosSpinner.selectedItemPosition+1,
+            BleWrapper.setSingleLight(singlePosSpinner.selectedItemPosition,
                 LightColor.entries[singleModeSpinner.selectedItemPosition]
                 )
         }
