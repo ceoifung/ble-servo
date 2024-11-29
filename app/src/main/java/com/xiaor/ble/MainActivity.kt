@@ -31,6 +31,12 @@ class MainActivity : AppCompatActivity() {
             MyBleManager.getDefault().disconnect()
             MyBleManager.getDefault().scanAndConnectBle(this)
         }
+        findViewById<Button>(R.id.btnDisconnectBle).setOnClickListener {
+            MyBleManager.getDefault().disconnect()
+        }
+        findViewById<Button>(R.id.btnClear).setOnClickListener {
+            tvLog.text = ""
+        }
 
 
         findViewById<SeekBar>(R.id.hSeekbar).setOnSeekBarChangeListener(object :

@@ -12,7 +12,7 @@ object BleWrapper {
     private const val TAG = "BleWrapper"
 
     private fun combineHighAndLowBits(highBits: Byte, lowBits: Byte): Int {
-        return (highBits.toInt() shl 8) or lowBits.toInt()
+        return (highBits.toUByte().toInt() shl 8) or lowBits.toUByte().toInt()
     }
 
     /**
@@ -29,6 +29,10 @@ object BleWrapper {
                     when (data[3]) {
                         Protocol.CTL_RECV -> {
                             if (data[4] >= 8.toByte()) {
+                                Log.e(TAG, "requestDataDecode: ${combineHighAndLowBits(
+                                    data[9],
+                                    data[10]
+                                ) }",)
                                 val boardMsg = BoardMsg(
                                     combineHighAndLowBits(data[5], data[6]),
                                     combineHighAndLowBits(data[7], data[8]),

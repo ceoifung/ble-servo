@@ -28,4 +28,11 @@ class ExampleUnitTest {
         val crc = Protocol.calculateCRC(data1, len)
         println("CRC in Kotlin: ${crc.toInt()}")
     }
+
+    @Test
+    fun test_combine_data(){
+        val byteValue: Byte = 0xF5.toByte()
+        val intValue: Int = byteValue.toUByte().toInt()
+        println(intValue) // 输出 245
+    }
 }

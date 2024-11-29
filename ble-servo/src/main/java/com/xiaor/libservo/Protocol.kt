@@ -56,10 +56,10 @@ object Protocol {
         for (i in 0 until len) {
             crc = crc xor data[i]
             for (j in 0..7) {
-                crc = if (crc.toInt() and 0x80 == 0x80) {
-                    (crc.toInt() shl 1).toByte() xor 0x07.toByte() // CRC-8 algorithm polynomial is 0x07
+                crc = if (crc.toUByte().toInt() and 0x80 == 0x80) {
+                    (crc.toUByte().toInt() shl 1).toByte() xor 0x07.toByte() // CRC-8 algorithm polynomial is 0x07
                 } else {
-                    (crc.toInt() shl 1).toByte()
+                    (crc.toUByte().toInt() shl 1).toByte()
                 }
             }
         }
