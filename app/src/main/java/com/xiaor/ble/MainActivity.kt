@@ -28,8 +28,8 @@ class MainActivity : AppCompatActivity() {
         tvLog.movementMethod = ScrollingMovementMethod.getInstance()
 
         findViewById<Button>(R.id.btnConnectBle).setOnClickListener {
+            MyBleManager.getDefault().disconnect()
             MyBleManager.getDefault().scanAndConnectBle(this)
-
         }
 
 
@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
         BleWrapper.registerMessageCallback(object :BleWrapper.IMessageCallbackListener{
 
             override fun onBoardStatusCallback(boardMsg: BoardMsg) {
-                appendLog("收到解析数据：${boardMsg}")
+                appendLog("收到电源板数据：${boardMsg}")
             }
 
             override fun onKeyStatusCallback(keyMsg: KeyMsg) {

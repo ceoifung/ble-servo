@@ -261,6 +261,7 @@ class MyBleManager {
 
                     override fun onWriteFailure(exception: BleException) {
                         Log.e(TAG, "onWriteFailure: ${exception.description}")
+                        bleStatusListener?.onStatusChanged(BleStatus.SEND_FAILURE)
                     }
                 })
         }.start()
@@ -275,13 +276,16 @@ class MyBleManager {
     }
 
     fun startNotify() {
+        if (myBleDevice == null){
+            return
+        }
         BleManager.getInstance().notify(
             myBleDevice,
             uuidService,
             uuidCharacteristicNotify,
             object : BleNotifyCallback() {
                 override fun onNotifySuccess() {
-                    Log.e(TAG, "onNotifySuccess: ")
+                    Log.d(TAG, "onNotifySuccess: ")
                     setMtu(100)
                 }
 
@@ -291,8 +295,11 @@ class MyBleManager {
 
                 override fun onCharacteristicChanged(data: ByteArray) {
                     if (data.isNotEmpty()) {
-                        Log.d(TAG, "onCharacteristicChanged: " + String(data))
-                        BleWrapper.requestDataDecode(data)
+                        try {
+                            BleWrapper.requestDataDecode(data)
+                        }catch (e: Exception){
+                            Log.e(TAG, "onCharacteristicChanged: 数据解析出错" )
+                        }
                     }
                 }
             })
@@ -303,6 +310,9 @@ class MyBleManager {
     }
 
     fun setMtu(mtu: Int) {
+        if (myBleDevice == null){
+            return
+        }
         BleManager.getInstance().setMtu(myBleDevice, mtu, object : BleMtuChangedCallback() {
             override fun onSetMTUFailure(exception: BleException) {
                 Log.e(TAG, "onSetMTUFailure: ${exception.description}")
@@ -317,10 +327,15 @@ class MyBleManager {
     fun disconnect() {
         cancelScan()
         stopNotify()
-        BleManager.getInstance().disconnect(myBleDevice)
+        if (myBleDevice != null){
+            BleManager.getInstance().disconnect(myBleDevice)
+        }
     }
 
     fun getRssi() {
+        if (myBleDevice == null){
+            return
+        }
         BleManager.getInstance().readRssi(
             myBleDevice,
             object : BleRssiCallback() {

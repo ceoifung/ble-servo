@@ -23,38 +23,40 @@ object BleWrapper {
         if (data[0] == Protocol.header[0] && data[1] == Protocol.header[1]
             && data[data.size - 2] == Protocol.tail[1] && data[data.size -1] == Protocol.tail[0]) {
             if (data[2] == Protocol.TYPE_RECV) {
-                when (data[3]) {
-                    Protocol.CTL_RECV -> {
-                        val crcArray = data.sliceArray(2 until data.size - 4)
-                        val crc = Protocol.calculateCRC(crcArray, crcArray.size)
-                        if (crc == data[data.size - 3]) {
-                            println("crc校验通过")
+                val crcArray = data.sliceArray(2 until data.size - 3)
+                val crc = Protocol.calculateCRC(crcArray, crcArray.size)
+                if (crc == data[data.size - 3]) {
+                    when (data[3]) {
+                        Protocol.CTL_RECV -> {
                             if (data[4] >= 8.toByte()) {
                                 val boardMsg = BoardMsg(
                                     combineHighAndLowBits(data[5], data[6]),
                                     combineHighAndLowBits(data[7], data[8]),
-                                    combineHighAndLowBits(data[9], data[10]),
+                                    (combineHighAndLowBits(
+                                        data[9],
+                                        data[10]
+                                    ) / 1000.0).toFloat(),
                                     data[11] == 0x01.toByte(),
                                     data[12] == 0x01.toByte()
                                 )
                                 listener?.onBoardStatusCallback(boardMsg)
                             }
+
+                        }
+                        Protocol.CTL_KEY1_STATUS -> {
+                            listener?.onKeyStatusCallback(KeyMsg(1, if (data[5] == 0x01.toByte()) KeyStatus.PRESSED else KeyStatus.RELEASE))
+                        }
+                        Protocol.CTL_KEY2_STATUS -> {
+                            listener?.onKeyStatusCallback(KeyMsg(2, if (data[5] == 0x01.toByte()) KeyStatus.PRESSED else KeyStatus.RELEASE))
+                        }
+
+                        Protocol.CTL_POWER_STATUS -> {
+                            listener?.onPowerStatusCallback(if (data[5] == 0x01.toByte()) PowerStatus.BOOT_UP else PowerStatus.POWER_OFF)
                         }
                     }
-                    Protocol.CTL_KEY1_STATUS -> {
-                        listener?.onKeyStatusCallback(KeyMsg(1, if (data[5] == 0x01.toByte()) KeyStatus.PRESSED else KeyStatus.RELEASE))
-                    }
-                    Protocol.CTL_KEY2_STATUS -> {
-                        listener?.onKeyStatusCallback(KeyMsg(2, if (data[5] == 0x01.toByte()) KeyStatus.PRESSED else KeyStatus.RELEASE))
-                    }
-
-                    Protocol.CTL_POWER_STATUS -> {
-                        listener?.onPowerStatusCallback(if (data[5] == 0x01.toByte()) PowerStatus.BOOT_UP else PowerStatus.POWER_OFF)
-                    }
+                }else{
+                    Log.e(TAG, "requestDataDecode: 数据crc校验出错" )
                 }
-            }else{
-                Log.e(TAG, "requestDataDecode: crc 校验失败" )
-
             }
         }
         listener?.onRawDataCallback(data)

@@ -3,14 +3,14 @@ package com.xiaor.libservo
 /**
  * 板子的回传数据
  *
- *     horizontalAngle: 水平云台电机角度
- *     verticalAngle: 垂直云台电机角度
- *     batteryVoltage: 电池电压
+ *     horizontalAngle: 水平云台电机角度，单位度
+ *     verticalAngle: 垂直云台电机角度，单位度
+ *     batteryVoltage: 电池电压，单位毫伏
  *     isHorizontalInCtl: 水平云台电机受控状态和非受控状态，true为受控，false为非受控
  *     isVerticalInCtl: 垂直云台电机受控状态和非受控状态，true为受控，false为非受控
  *
  */
-data class BoardMsg(var horizontalAngle:Int, var verticalAngle:Int,var batteryVoltage:Int,
+data class BoardMsg(var horizontalAngle:Int, var verticalAngle:Int,var batteryVoltage:Float,
     var isHorizontalInCtl: Boolean, var isVerticalInCtl: Boolean)
 
 /**

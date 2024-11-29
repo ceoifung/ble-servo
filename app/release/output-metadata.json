@@ -11,9 +11,9 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 6,
-      "versionName": "1.0.7.241128.55b2a25",
-      "outputFile": "BleServo-1.0.7.241128.55b2a25-release.apk"
+      "versionCode": 8,
+      "versionName": "1.0.9.241129.65e0b13",
+      "outputFile": "BleServo-1.0.9.241129.65e0b13-release.apk"
     }
   ],
   "elementType": "File"
