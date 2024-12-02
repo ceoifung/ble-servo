@@ -12,7 +12,7 @@ object BleWrapper {
     private const val TAG = "BleWrapper"
 
     private var maxLimitHorizontalAngle: Int = 180
-    private var maxLimitVerticalAngle: Int = 72
+    private var maxLimitVerticalAngle: Int = 180
 
     private fun combineHighAndLowBits(highBits: Byte, lowBits: Byte): Int {
         return (highBits.toUByte().toInt() shl 8) or lowBits.toUByte().toInt()

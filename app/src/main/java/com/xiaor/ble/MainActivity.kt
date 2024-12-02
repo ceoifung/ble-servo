@@ -38,12 +38,16 @@ class MainActivity : AppCompatActivity() {
             tvLog.text = ""
         }
 
+        val tvHAngle = findViewById<TextView>(R.id.tvHAngle)
+        val tvVAngle = findViewById<TextView>(R.id.tvVAngle)
+
 
         findViewById<SeekBar>(R.id.hSeekbar).setOnSeekBarChangeListener(object :
             OnSeekBarChangeListener {
             override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
                 BleWrapper.setHorizontalMoveAngle(p1)
-                appendLog("水平角度: $p1")
+//                appendLog("水平角度: $p1")
+                tvHAngle.text = "$p1"
             }
 
             override fun onStartTrackingTouch(p0: SeekBar?) {
@@ -58,7 +62,9 @@ class MainActivity : AppCompatActivity() {
             OnSeekBarChangeListener {
             override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) {
                 BleWrapper.setVerticalMoveAngle(p1)
-                appendLog("垂直角度: $p1")
+//                appendLog("垂直角度: $p1")
+                tvVAngle.text = "$p1"
+
             }
 
             override fun onStartTrackingTouch(p0: SeekBar?) {
