@@ -6,10 +6,13 @@ import kotlin.math.min
 
 object BleWrapper {
     private var currentX = 90
-    private var currentY = 90
+    private var currentY = 0
     private var listener: IMessageCallbackListener?=null
 
     private const val TAG = "BleWrapper"
+
+    private var maxLimitHorizontalAngle: Int = 180
+    private var maxLimitVerticalAngle: Int = 72
 
     private fun combineHighAndLowBits(highBits: Byte, lowBits: Byte): Int {
         return (highBits.toUByte().toInt() shl 8) or lowBits.toUByte().toInt()
@@ -29,10 +32,10 @@ object BleWrapper {
                     when (data[3]) {
                         Protocol.CTL_RECV -> {
                             if (data[4] >= 8.toByte()) {
-                                Log.e(TAG, "requestDataDecode: ${combineHighAndLowBits(
-                                    data[9],
-                                    data[10]
-                                ) }",)
+//                                Log.e(TAG, "requestDataDecode: ${combineHighAndLowBits(
+//                                    data[9],
+//                                    data[10]
+//                                ) }",)
                                 val boardMsg = BoardMsg(
                                     combineHighAndLowBits(data[5], data[6]),
                                     combineHighAndLowBits(data[7], data[8]),
@@ -88,13 +91,29 @@ object BleWrapper {
     }
 
     /**
+     * 设置最大的垂直电机的限位角度
+     * @param angle 最大限制角度，默认是72度
+     */
+    fun setMaxLimitVerticalAngle(angle: Int){
+        maxLimitVerticalAngle = angle
+    }
+
+    /**
+     * 设置最大的水平电机的限位角度
+     * @param angle 最大限制角度，默认是180度
+     */
+    fun setMaxLimitHorizontalAngle(angle: Int){
+        maxLimitHorizontalAngle = angle
+    }
+
+    /**
      * 设置水平和云台电机的角度
      * @param horizontalAngle 水平电机角度
      * @param verticalAngle 垂直电机角度
      */
     fun setMotorMoveAngle(horizontalAngle: Int, verticalAngle: Int){
-        currentX = max(0, min(180, horizontalAngle))
-        currentY = max(0, min(180, verticalAngle))
+        currentX = max(0, min(maxLimitHorizontalAngle, horizontalAngle))
+        currentY = max(0, min(maxLimitVerticalAngle, verticalAngle))
         setAngle()
     }
 
@@ -105,9 +124,9 @@ object BleWrapper {
      */
     fun setMotorMoveStep(horizontalStep: Int, verticalStep: Int){
         currentX += horizontalStep
-        currentX = max(0, min(180, currentX))
+        currentX = max(0, min(maxLimitHorizontalAngle, currentX))
         currentY += verticalStep
-        currentY = max(0, min(180, currentY))
+        currentY = max(0, min(maxLimitVerticalAngle, currentY))
         setAngle()
     }
 
@@ -118,7 +137,7 @@ object BleWrapper {
     fun setHorizontalMoveAngle(angle: Int) {
         //这个跟您原先的接口保持一致,但需要一个当前角度的返回值,
         //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
-        currentX = max(0, min(180, angle))
+        currentX = max(0, min(maxLimitHorizontalAngle, angle))
         setAngle()
     }
 
@@ -129,7 +148,7 @@ object BleWrapper {
     fun setVerticalMoveAngle(angle: Int) {
         //这个跟您原先的接口保持一致,但需要一个当前角度的返回值,
         //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
-        currentY = max(0, min(180, angle))
+        currentY = max(0, min(maxLimitVerticalAngle, angle))
         setAngle()
     }
 
@@ -141,7 +160,7 @@ object BleWrapper {
         //这个跟您原先的接口保持一致,但需要一个当前角度的返回值,
         //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
         currentX += step
-        currentX = max(0, min(180, currentX))
+        currentX = max(0, min(maxLimitHorizontalAngle, currentX))
         setAngle()
     }
 
@@ -153,7 +172,7 @@ object BleWrapper {
         //这个跟您原先的接口保持一致,但需要一个当前角度的返回值,
         //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
         currentY += step
-        currentY = max(0, min(180, currentX))
+        currentY = max(0, min(maxLimitVerticalAngle, currentX))
         setAngle()
     }
 
