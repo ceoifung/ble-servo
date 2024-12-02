@@ -143,8 +143,8 @@ class MyBleManager {
                 if (bleDevice.name != null){
                     if(bleDevice.name.startsWith(bleName, true)) {
                         if (bleDevice.rssi >= nearRssi) {
-                            myBleDevice = bleDevice
-                            connectBle()
+//                            myBleDevice = bleDevice
+                            connectBle(bleDevice)
                         }
                     }
                 }
@@ -158,7 +158,8 @@ class MyBleManager {
         })
     }
 
-    fun connectBle() {
+    fun connectBle(bleDevice: BleDevice) {
+        myBleDevice = bleDevice
         BleManager.getInstance().connect(myBleDevice, object : BleGattCallback() {
             override fun onStartConnect() {
                 Log.d(TAG, "onStartConnect: start connect ble")
@@ -167,6 +168,7 @@ class MyBleManager {
 
             override fun onConnectFail(bleDevice: BleDevice, exception: BleException) {
                 Log.e(TAG, "onConnectFail: ${bleDevice.name} connect fail")
+                myBleDevice = null
                 bleStatusListener?.onStatusChanged(BleStatus.FAILURE)
             }
 
@@ -275,7 +277,7 @@ class MyBleManager {
         writeData(data.toByteArray())
     }
 
-    fun startNotify() {
+    private fun startNotify() {
         if (myBleDevice == null){
             return
         }
@@ -311,6 +313,7 @@ class MyBleManager {
 
     fun setMtu(mtu: Int) {
         if (myBleDevice == null){
+            Log.e(TAG, "setMtu: ble device cannot be null" )
             return
         }
         BleManager.getInstance().setMtu(myBleDevice, mtu, object : BleMtuChangedCallback() {

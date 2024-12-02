@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:padding="10dp"
     tools:context=".MainActivity">
 
     <LinearLayout
@@ -74,7 +75,7 @@
             android:text="单色控制"/>
         <Spinner
             android:id="@+id/singlePosSpinner"
-            android:layout_width="80dp"
+            android:layout_width="100dp"
             android:layout_height="wrap_content"
             android:entries="@array/lights"/>
         <Spinner
