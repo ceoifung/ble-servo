@@ -18,11 +18,15 @@ data class BoardMsg(var horizontalAngle:Int, var verticalAngle:Int,var batteryVo
  *
  *      RELEASE 松手事件
  *      PRESSED 按下按键事件
+ *      LONG_PRESSED 长按事件
+ *      ERROR 错误数据
  *
  */
 enum class KeyStatus{
     RELEASE,
-    PRESSED
+    PRESSED,
+    LONG_PRESSED,
+    ERROR
 }
 
 /**
@@ -30,11 +34,13 @@ enum class KeyStatus{
  *
  *      BOOT_UP 开机事件
  *      POWER_OFF 关机时间
+ *      ERROR 错误数据
  *
  */
 enum class PowerStatus{
     BOOT_UP,
-    POWER_OFF
+    POWER_OFF,
+    ERROR
 }
 
 /**

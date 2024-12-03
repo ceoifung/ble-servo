@@ -18,6 +18,23 @@ object BleWrapper {
         return (highBits.toUByte().toInt() shl 8) or lowBits.toUByte().toInt()
     }
 
+    private fun decodeKeyStatus(status: Int): KeyStatus{
+        return when (status) {
+            0x00 -> KeyStatus.RELEASE
+            0x01 -> KeyStatus.PRESSED
+            0x02 -> KeyStatus.LONG_PRESSED
+            else -> KeyStatus.ERROR
+        }
+    }
+
+    private fun decodePowerStatus(status: Int):PowerStatus{
+        return when(status){
+            0x00 -> PowerStatus.POWER_OFF
+            0x01 -> PowerStatus.BOOT_UP
+            else -> PowerStatus.ERROR
+        }
+    }
+
     /**
      * 解析回传数据，在蓝牙接收事件中调用
      * @param data
@@ -32,10 +49,6 @@ object BleWrapper {
                     when (data[3]) {
                         Protocol.CTL_RECV -> {
                             if (data[4] >= 8.toByte()) {
-//                                Log.e(TAG, "requestDataDecode: ${combineHighAndLowBits(
-//                                    data[9],
-//                                    data[10]
-//                                ) }",)
                                 val boardMsg = BoardMsg(
                                     combineHighAndLowBits(data[5], data[6]),
                                     combineHighAndLowBits(data[7], data[8]),
@@ -51,14 +64,14 @@ object BleWrapper {
 
                         }
                         Protocol.CTL_KEY1_STATUS -> {
-                            listener?.onKeyStatusCallback(KeyMsg(1, if (data[5] == 0x01.toByte()) KeyStatus.PRESSED else KeyStatus.RELEASE))
+                            listener?.onKeyStatusCallback(KeyMsg(1, decodeKeyStatus(data[5].toInt())))
                         }
                         Protocol.CTL_KEY2_STATUS -> {
-                            listener?.onKeyStatusCallback(KeyMsg(2, if (data[5] == 0x01.toByte()) KeyStatus.PRESSED else KeyStatus.RELEASE))
+                            listener?.onKeyStatusCallback(KeyMsg(2, decodeKeyStatus(data[5].toInt())))
                         }
 
                         Protocol.CTL_POWER_STATUS -> {
-                            listener?.onPowerStatusCallback(if (data[5] == 0x01.toByte()) PowerStatus.BOOT_UP else PowerStatus.POWER_OFF)
+                            listener?.onPowerStatusCallback(decodePowerStatus(data[5].toInt()))
                         }
                     }
                 }else{
