@@ -122,6 +122,32 @@
             android:text="发送"/>
 
     </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <Button
+            android:id="@+id/btnPlusAngle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="H+3度"/>
+        <Button
+            android:id="@+id/btnMinusAngle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="H-3度" />
+        <Button
+            android:id="@+id/btnVPlusAngle"
+            android:layout_marginStart="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="V+3度"/>
+        <Button
+            android:id="@+id/btnVMinusAngle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="V-3度" />
+    </LinearLayout>
     <TextView
         android:id="@+id/tvLog"
         android:layout_marginTop="20dp"

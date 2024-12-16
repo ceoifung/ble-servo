@@ -113,6 +113,19 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnSendAll).setOnClickListener {
             BleWrapper.setLight(LightColor.entries[allSpinner.selectedItemPosition])
         }
+
+        findViewById<Button>(R.id.btnPlusAngle).setOnClickListener {
+            BleWrapper.setHorizontalMoveStep(3)
+        }
+        findViewById<Button>(R.id.btnMinusAngle).setOnClickListener {
+            BleWrapper.setHorizontalMoveStep(-3)
+        }
+        findViewById<Button>(R.id.btnVPlusAngle).setOnClickListener {
+            BleWrapper.setVerticalMoveStep(3)
+        }
+        findViewById<Button>(R.id.btnVMinusAngle).setOnClickListener {
+            BleWrapper.setVerticalMoveStep(-3)
+        }
     }
 
     private fun appendLog(msg:String){

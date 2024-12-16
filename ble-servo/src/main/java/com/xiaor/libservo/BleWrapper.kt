@@ -185,7 +185,7 @@ object BleWrapper {
         //这个跟您原先的接口保持一致,但需要一个当前角度的返回值,
         //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
         currentY += step
-        currentY = max(0, min(maxLimitVerticalAngle, currentX))
+        currentY = max(0, min(maxLimitVerticalAngle, currentY))
         setAngle()
     }
 
