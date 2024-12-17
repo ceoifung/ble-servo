@@ -75,11 +75,22 @@ class MainActivity : AppCompatActivity() {
 
         })
 
+        var isReverse = false
+
         MyBleManager.getDefault().requestPermissions(this)
         BleWrapper.registerMessageCallback(object :BleWrapper.IMessageCallbackListener{
 
             override fun onBoardStatusCallback(boardMsg: BoardMsg) {
-                appendLog("收到电源板数据：${boardMsg}")
+                if (isReverse){
+                    appendLog("hAngle: ${boardMsg.horizontalAngle}, isH: ${boardMsg.isHorizontalInCtl}, vAngle: ${boardMsg.verticalAngle}, isV: ${boardMsg.isVerticalInCtl}")
+                    if (boardMsg.horizontalAngle <=10){
+                        BleWrapper.setHorizontalMoveAngle(180)
+                    }else if(boardMsg.horizontalAngle >= 180){
+                        BleWrapper.setHorizontalMoveAngle(0)
+                    }
+                }else{
+                    appendLog("收到电源板数据：${boardMsg}")
+                }
             }
 
             override fun onKeyStatusCallback(keyMsg: KeyMsg) {
@@ -91,9 +102,11 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onRawDataCallback(data: ByteArray) {
-                appendLog("收到原始数据：${data.joinToString(separator = "") { byte ->
-                    "%02x ".format(byte)
-                }}")
+                if (!isReverse){
+                    appendLog("收到原始数据：${data.joinToString(separator = "") { byte ->
+                        "%02x ".format(byte)
+                    }}")
+                }
             }
 
         })
@@ -125,6 +138,18 @@ class MainActivity : AppCompatActivity() {
         }
         findViewById<Button>(R.id.btnVMinusAngle).setOnClickListener {
             BleWrapper.setVerticalMoveStep(-3)
+        }
+
+        val btnReverse = findViewById<Button>(R.id.btnReverseAngle)
+        btnReverse.setOnClickListener {
+            isReverse = !isReverse
+            if (isReverse){
+                BleWrapper.setHorizontalMoveAngle(180)
+                btnReverse.text = "停止"
+            }else{
+                btnReverse.text = "循环"
+                BleWrapper.stopMove()
+            }
         }
     }
 
