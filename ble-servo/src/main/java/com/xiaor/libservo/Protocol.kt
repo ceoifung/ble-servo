@@ -19,6 +19,10 @@ object Protocol {
     val CTL_KEY2_STATUS:Byte = 0x03
     val CTL_POWER_STATUS:Byte = 0x04
 
+    val CTL_H_STEP:Byte = 0x02
+    val CTL_V_STEP:Byte = 0x03
+    val CTL_ALL_STEP:Byte = 0x04
+
     /**
      * 创建消息
      * @param data 不定长的byte数组

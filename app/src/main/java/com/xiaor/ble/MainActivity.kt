@@ -2,6 +2,7 @@ package com.xiaor.ble
 
 import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
+import android.util.Log
 import android.widget.Button
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
@@ -15,6 +16,7 @@ import com.xiaor.libservo.KeyMsg
 import com.xiaor.libservo.LightColor
 import com.xiaor.libservo.MyBleManager
 import com.xiaor.libservo.PowerStatus
+import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
 
@@ -40,6 +42,8 @@ class MainActivity : AppCompatActivity() {
 
         val tvHAngle = findViewById<TextView>(R.id.tvHAngle)
         val tvVAngle = findViewById<TextView>(R.id.tvVAngle)
+        var isConntinueAdd = false
+        var isConntinueMinus = false
 
 
         findViewById<SeekBar>(R.id.hSeekbar).setOnSeekBarChangeListener(object :
@@ -89,7 +93,11 @@ class MainActivity : AppCompatActivity() {
                         BleWrapper.setHorizontalMoveAngle(0)
                     }
                 }else{
-                    appendLog("收到电源板数据：${boardMsg}")
+                    if (!isConntinueAdd && !isConntinueMinus){
+                        appendLog("收到电源板数据：${boardMsg}")
+                    }else{
+                        appendLog("hAngle: ${boardMsg.horizontalAngle}, isH: ${boardMsg.isHorizontalInCtl}, vAngle: ${boardMsg.verticalAngle}, isV: ${boardMsg.isVerticalInCtl}")
+                    }
                 }
             }
 
@@ -102,7 +110,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onRawDataCallback(data: ByteArray) {
-                if (!isReverse){
+                if (!isReverse && !isConntinueAdd && !isConntinueMinus){
                     appendLog("收到原始数据：${data.joinToString(separator = "") { byte ->
                         "%02x ".format(byte)
                     }}")
@@ -140,6 +148,33 @@ class MainActivity : AppCompatActivity() {
             BleWrapper.setVerticalMoveStep(-3)
         }
 
+
+
+        findViewById<Button>(R.id.btnStopMove).setOnClickListener {
+            isConntinueAdd = false
+            isConntinueMinus = false
+            BleWrapper.stopMove()
+        }
+        findViewById<Button>(R.id.btnContinueAdd).setOnClickListener {
+            isConntinueAdd = true
+            isConntinueMinus = false
+            Thread{
+                while (isConntinueAdd){
+                    BleWrapper.setMotorMoveStep(3, 3)
+                    Thread.sleep(50)
+                }
+            }.start()
+        }
+        findViewById<Button>(R.id.btnContinueMinus).setOnClickListener {
+            isConntinueMinus = true
+            isConntinueAdd = false
+            Thread{
+                while (isConntinueMinus){
+                    BleWrapper.setMotorMoveStep(-3, -3)
+                    Thread.sleep(50)
+                }
+            }.start()
+        }
         val btnReverse = findViewById<Button>(R.id.btnReverseAngle)
         btnReverse.setOnClickListener {
             isReverse = !isReverse
@@ -170,6 +205,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        MyBleManager.getDefault().disconnect()
         MyBleManager.getDefault().unregisterBleReceiver(this)
     }
 

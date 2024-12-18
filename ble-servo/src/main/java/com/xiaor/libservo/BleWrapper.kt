@@ -7,7 +7,7 @@ import kotlin.math.min
 object BleWrapper {
     private var currentX = 90
     private var currentY = 0
-    private var listener: IMessageCallbackListener?=null
+    private var listener: IMessageCallbackListener? = null
 
     private const val TAG = "BleWrapper"
 
@@ -18,7 +18,7 @@ object BleWrapper {
         return (highBits.toUByte().toInt() shl 8) or lowBits.toUByte().toInt()
     }
 
-    private fun decodeKeyStatus(status: Int): KeyStatus{
+    private fun decodeKeyStatus(status: Int): KeyStatus {
         return when (status) {
             0x00 -> KeyStatus.RELEASE
             0x01 -> KeyStatus.PRESSED
@@ -27,8 +27,8 @@ object BleWrapper {
         }
     }
 
-    private fun decodePowerStatus(status: Int):PowerStatus{
-        return when(status){
+    private fun decodePowerStatus(status: Int): PowerStatus {
+        return when (status) {
             0x00 -> PowerStatus.POWER_OFF
             0x01 -> PowerStatus.BOOT_UP
             else -> PowerStatus.ERROR
@@ -39,9 +39,10 @@ object BleWrapper {
      * 解析回传数据，在蓝牙接收事件中调用
      * @param data
      */
-    fun requestDataDecode(data: ByteArray){
+    fun requestDataDecode(data: ByteArray) {
         if (data[0] == Protocol.header[0] && data[1] == Protocol.header[1]
-            && data[data.size - 2] == Protocol.tail[1] && data[data.size -1] == Protocol.tail[0]) {
+            && data[data.size - 2] == Protocol.tail[1] && data[data.size - 1] == Protocol.tail[0]
+        ) {
             if (data[2] == Protocol.TYPE_RECV) {
                 val crcArray = data.sliceArray(2 until data.size - 3)
                 val crc = Protocol.calculateCRC(crcArray, crcArray.size)
@@ -63,19 +64,31 @@ object BleWrapper {
                             }
 
                         }
+
                         Protocol.CTL_KEY1_STATUS -> {
-                            listener?.onKeyStatusCallback(KeyMsg(1, decodeKeyStatus(data[5].toInt())))
+                            listener?.onKeyStatusCallback(
+                                KeyMsg(
+                                    1,
+                                    decodeKeyStatus(data[5].toInt())
+                                )
+                            )
                         }
+
                         Protocol.CTL_KEY2_STATUS -> {
-                            listener?.onKeyStatusCallback(KeyMsg(2, decodeKeyStatus(data[5].toInt())))
+                            listener?.onKeyStatusCallback(
+                                KeyMsg(
+                                    2,
+                                    decodeKeyStatus(data[5].toInt())
+                                )
+                            )
                         }
 
                         Protocol.CTL_POWER_STATUS -> {
                             listener?.onPowerStatusCallback(decodePowerStatus(data[5].toInt()))
                         }
                     }
-                }else{
-                    Log.e(TAG, "requestDataDecode: 数据crc校验出错" )
+                } else {
+                    Log.e(TAG, "requestDataDecode: 数据crc校验出错")
                 }
             }
         }
@@ -88,26 +101,33 @@ object BleWrapper {
      */
     private fun writeData(bytes: ByteArray) {
         try {
+//            Log.e(TAG, "writeData：${bytes.joinToString(separator = "") { byte ->
+//                "%02x ".format(byte)
+//            }}" )
             MyBleManager.getDefault().writeData(bytes)
-        }catch (ex: Exception){
-            Log.e(TAG, "writeData: ${ex.message}" )
+        } catch (ex: Exception) {
+            Log.e(TAG, "writeData: ${ex.message}")
         }
     }
 
     /**
      * 设置角度
      */
-    private fun setAngle(){
-        writeData(Protocol.createMessage(Protocol.TYPE_SERVO, Protocol.CTL_SERVO, 4,
-            ((currentX shr 8) and 0xFF).toByte(), (currentX and 0xff).toByte(),
-            ((currentY shr 8) and 0xFF).toByte(), (currentY and 0xff).toByte()))
+    private fun setAngle() {
+        writeData(
+            Protocol.createMessage(
+                Protocol.TYPE_SERVO, Protocol.CTL_SERVO, 4,
+                ((currentX shr 8) and 0xFF).toByte(), (currentX and 0xff).toByte(),
+                ((currentY shr 8) and 0xFF).toByte(), (currentY and 0xff).toByte()
+            )
+        )
     }
 
     /**
      * 设置最大的垂直电机的限位角度
      * @param angle 最大限制角度，默认是72度
      */
-    fun setMaxLimitVerticalAngle(angle: Int){
+    fun setMaxLimitVerticalAngle(angle: Int) {
         maxLimitVerticalAngle = angle
     }
 
@@ -115,7 +135,7 @@ object BleWrapper {
      * 设置最大的水平电机的限位角度
      * @param angle 最大限制角度，默认是180度
      */
-    fun setMaxLimitHorizontalAngle(angle: Int){
+    fun setMaxLimitHorizontalAngle(angle: Int) {
         maxLimitHorizontalAngle = angle
     }
 
@@ -124,7 +144,7 @@ object BleWrapper {
      * @param horizontalAngle 水平电机角度
      * @param verticalAngle 垂直电机角度
      */
-    fun setMotorMoveAngle(horizontalAngle: Int, verticalAngle: Int){
+    fun setMotorMoveAngle(horizontalAngle: Int, verticalAngle: Int) {
         currentX = max(0, min(maxLimitHorizontalAngle, horizontalAngle))
         currentY = max(0, min(maxLimitVerticalAngle, verticalAngle))
         setAngle()
@@ -132,15 +152,19 @@ object BleWrapper {
 
     /**
      * 以步幅的形式设置水平和云台电机的角度
-     * @param horizontalStep 水平电机角度的步幅
-     * @param verticalStep 垂直电机角度的步幅
+     * @param horizontalStep 水平电机角度的步幅，最小为-20，最大为20
+     * @param verticalStep 垂直电机角度的步幅，最小为-20，最大为20
      */
-    fun setMotorMoveStep(horizontalStep: Int, verticalStep: Int){
-        currentX += horizontalStep
-        currentX = max(0, min(maxLimitHorizontalAngle, currentX))
-        currentY += verticalStep
-        currentY = max(0, min(maxLimitVerticalAngle, currentY))
-        setAngle()
+    fun setMotorMoveStep(horizontalStep: Int, verticalStep: Int) {
+        val realHStep = max(-20, min(20, horizontalStep))
+        val realVStep = max(-20, min(20, verticalStep))
+        writeData(
+            Protocol.createMessage(
+                Protocol.TYPE_SERVO, Protocol.CTL_ALL_STEP,
+                4, if (realHStep < 0) 1 else 0, realHStep.toByte(),
+                if (realVStep < 0) 1 else 0, realVStep.toByte()
+            )
+        )
     }
 
     /**
@@ -167,35 +191,41 @@ object BleWrapper {
 
     /**
      * 设置水平云台舵机步幅
-     * @param step 步幅
+     * @param step 步幅，最小为-20，最大为20
      */
-    fun setHorizontalMoveStep(step: Int){
-        //这个跟您原先的接口保持一致,但需要一个当前角度的返回值,
-        //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
-        currentX += step
-        currentX = max(0, min(maxLimitHorizontalAngle, currentX))
-        setAngle()
+    fun setHorizontalMoveStep(step: Int) {
+//        Log.e(TAG, "setHorizontalMoveStep: $step" )
+//        val realStep = max(-20, min(20, step))
+//        writeData(
+//            Protocol.createMessage(
+//                Protocol.TYPE_SERVO, Protocol.CTL_H_STEP,
+//                2, if (realStep < 0) 1 else 0, realStep.toByte()
+//            )
+//        )
+        setMotorMoveStep(step, 0)
     }
 
     /**
      * 设置垂直云台舵机步幅
-     * @param step 步幅
+     * @param step 步幅，最小为-20，最大为20
      */
     fun setVerticalMoveStep(step: Int) {
-        //这个跟您原先的接口保持一致,但需要一个当前角度的返回值,
-        //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
-        currentY += step
-        currentY = max(0, min(maxLimitVerticalAngle, currentY))
-        setAngle()
+//        val realStep = max(-20, min(20, step))
+//        writeData(
+//            Protocol.createMessage(
+//                Protocol.TYPE_SERVO, Protocol.CTL_V_STEP,
+//                2, if (realStep < 0) 1 else 0, realStep.toByte()
+//            )
+//        )
+        setMotorMoveStep(0, step)
     }
 
     /**
      * 获取当前的角度，这个是上面设置的，底部的不一定是这个角度，用registerMessageCallback实时监听底部数据回传
      * @see registerMessageCallback
      */
+    @Deprecated("Not real horizontal angle, please use registerMessageCallback", ReplaceWith("registerMessageCallback"))
     fun getCurrentHorizontalAngle(): Int {
-        //获取当前的角度,方便复位,我们可以自己算出初始位置和现在角度的差距,
-        //后期用我们算出的角度值,直接复位云台
         return currentX
     }
 
@@ -203,9 +233,8 @@ object BleWrapper {
      * 获取当前的角度，这个是上面设置的，底部的不一定是这个角度，用registerMessageCallback实时监听底部数据回传
      * @see registerMessageCallback
      */
+    @Deprecated("Not real vertical angle, please use registerMessageCallback", ReplaceWith("registerMessageCallback"))
     fun getCurrentVerticalAngle(): Int {
-        //获取当前的角度,方便复位,我们可以自己算出初始位置和现在角度的差距,
-        //后期用我们算出的角度值,直接复位云台
         return currentY
     }
 
@@ -215,8 +244,12 @@ object BleWrapper {
      * @see LightColor
      */
     fun setLight(color: LightColor) {
-        writeData(Protocol.createMessage(Protocol.TYPE_LIGHT,
-            Protocol.CTL_LIGHT,3,2,20, color.getColor()))
+        writeData(
+            Protocol.createMessage(
+                Protocol.TYPE_LIGHT,
+                Protocol.CTL_LIGHT, 3, 2, 20, color.getColor()
+            )
+        )
     }
 
     /**
@@ -225,17 +258,21 @@ object BleWrapper {
      * @param color 颜色，LightColor
      * @see LightColor 颜色通道枚举类型
      */
-    fun setSingleLight(position: Int, color: LightColor){
+    fun setSingleLight(position: Int, color: LightColor) {
         val pos = max(0, min(20, position))
-        writeData(Protocol.createMessage(Protocol.TYPE_LIGHT,
-            Protocol.CTL_LIGHT,3,4,pos.toByte(), color.getColor()))
+        writeData(
+            Protocol.createMessage(
+                Protocol.TYPE_LIGHT,
+                Protocol.CTL_LIGHT, 3, 4, pos.toByte(), color.getColor()
+            )
+        )
     }
 
     /**
      * 停止所有的电机转动
      *
      */
-    fun stopMove(){
+    fun stopMove() {
         stopMove(MotorDef.ALL)
     }
 
@@ -244,9 +281,13 @@ object BleWrapper {
      * @param motor 0是所有电机，1是水平云台舵机，2是垂直云台舵机
      * @see MotorDef 电机定义型号
      */
-    fun stopMove(motor: MotorDef){
-        writeData(Protocol.createMessage(Protocol.TYPE_SERVO, Protocol.CTL_STOP,
-            1, motor.getMotorId()))
+    fun stopMove(motor: MotorDef) {
+        writeData(
+            Protocol.createMessage(
+                Protocol.TYPE_SERVO, Protocol.CTL_STOP,
+                1, motor.getMotorId()
+            )
+        )
     }
 
     /**
@@ -254,11 +295,11 @@ object BleWrapper {
      * @param callback IMessageCallbackListener
      * @see IMessageCallbackListener
      */
-    fun registerMessageCallback(callback: IMessageCallbackListener){
+    fun registerMessageCallback(callback: IMessageCallbackListener) {
         listener = callback
     }
 
-    interface IMessageCallbackListener{
+    interface IMessageCallbackListener {
         /**
          * 板子状态消息回调
          * @see BoardMsg
