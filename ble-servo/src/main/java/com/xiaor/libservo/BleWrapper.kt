@@ -1,6 +1,7 @@
 package com.xiaor.libservo
 
 import android.util.Log
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -161,8 +162,8 @@ object BleWrapper {
         writeData(
             Protocol.createMessage(
                 Protocol.TYPE_SERVO, Protocol.CTL_ALL_STEP,
-                4, if (realHStep < 0) 1 else 0, realHStep.toByte(),
-                if (realVStep < 0) 1 else 0, realVStep.toByte()
+                4, if (realHStep < 0) 1 else 0, abs(realHStep).toByte(),
+                if (realVStep < 0) 1 else 0, abs(realVStep).toByte()
             )
         )
     }
@@ -195,14 +196,14 @@ object BleWrapper {
      */
     fun setHorizontalMoveStep(step: Int) {
 //        Log.e(TAG, "setHorizontalMoveStep: $step" )
-//        val realStep = max(-20, min(20, step))
-//        writeData(
-//            Protocol.createMessage(
-//                Protocol.TYPE_SERVO, Protocol.CTL_H_STEP,
-//                2, if (realStep < 0) 1 else 0, realStep.toByte()
-//            )
-//        )
-        setMotorMoveStep(step, 0)
+        val realStep = max(-20, min(20, step))
+        writeData(
+            Protocol.createMessage(
+                Protocol.TYPE_SERVO, Protocol.CTL_H_STEP,
+                2, if (realStep < 0) 1 else 0, abs(realStep).toByte()
+            )
+        )
+//        setMotorMoveStep(step, 0)
     }
 
     /**
@@ -210,14 +211,14 @@ object BleWrapper {
      * @param step 步幅，最小为-20，最大为20
      */
     fun setVerticalMoveStep(step: Int) {
-//        val realStep = max(-20, min(20, step))
-//        writeData(
-//            Protocol.createMessage(
-//                Protocol.TYPE_SERVO, Protocol.CTL_V_STEP,
-//                2, if (realStep < 0) 1 else 0, realStep.toByte()
-//            )
-//        )
-        setMotorMoveStep(0, step)
+        val realStep = max(-20, min(20, step))
+        writeData(
+            Protocol.createMessage(
+                Protocol.TYPE_SERVO, Protocol.CTL_V_STEP,
+                2, if (realStep < 0) 1 else 0, abs(realStep).toByte()
+            )
+        )
+//        setMotorMoveStep(0, step)
     }
 
     /**
