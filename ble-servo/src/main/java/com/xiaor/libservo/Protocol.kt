@@ -9,6 +9,8 @@ object Protocol {
 //  舵机的控制逻辑
     val TYPE_SERVO:Byte = 0x01
     val CTL_SERVO:Byte  = 0x00
+    val CTL_H_SERVO:Byte  = 0x05
+    val CTL_V_SERVO:Byte  = 0x06
     val CTL_STOP:Byte = 0x01
 //  彩灯的控制
     val TYPE_LIGHT:Byte = 0x02

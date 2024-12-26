@@ -6,8 +6,6 @@ import kotlin.math.max
 import kotlin.math.min
 
 object BleWrapper {
-    private var currentX = 90
-    private var currentY = 0
     private var listener: IMessageCallbackListener? = null
 
     private const val TAG = "BleWrapper"
@@ -112,19 +110,6 @@ object BleWrapper {
     }
 
     /**
-     * 设置角度
-     */
-    private fun setAngle() {
-        writeData(
-            Protocol.createMessage(
-                Protocol.TYPE_SERVO, Protocol.CTL_SERVO, 4,
-                ((currentX shr 8) and 0xFF).toByte(), (currentX and 0xff).toByte(),
-                ((currentY shr 8) and 0xFF).toByte(), (currentY and 0xff).toByte()
-            )
-        )
-    }
-
-    /**
      * 设置最大的垂直电机的限位角度
      * @param angle 最大限制角度，默认是72度
      */
@@ -146,9 +131,15 @@ object BleWrapper {
      * @param verticalAngle 垂直电机角度
      */
     fun setMotorMoveAngle(horizontalAngle: Int, verticalAngle: Int) {
-        currentX = max(0, min(maxLimitHorizontalAngle, horizontalAngle))
-        currentY = max(0, min(maxLimitVerticalAngle, verticalAngle))
-        setAngle()
+        val currentX = max(0, min(maxLimitHorizontalAngle, horizontalAngle))
+        val currentY = max(0, min(maxLimitVerticalAngle, verticalAngle))
+        writeData(
+            Protocol.createMessage(
+                Protocol.TYPE_SERVO, Protocol.CTL_SERVO, 4,
+                ((currentX shr 8) and 0xFF).toByte(), (currentX and 0xff).toByte(),
+                ((currentY shr 8) and 0xFF).toByte(), (currentY and 0xff).toByte()
+            )
+        )
     }
 
     /**
@@ -173,10 +164,13 @@ object BleWrapper {
      * @param angle
      */
     fun setHorizontalMoveAngle(angle: Int) {
-        //这个跟您原先的接口保持一致,但需要一个当前角度的返回值,
-        //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
-        currentX = max(0, min(maxLimitHorizontalAngle, angle))
-        setAngle()
+        val currentX = max(0, min(maxLimitHorizontalAngle, angle))
+        writeData(
+            Protocol.createMessage(
+                Protocol.TYPE_SERVO, Protocol.CTL_H_SERVO, 2,
+                ((currentX shr 8) and 0xFF).toByte(), (currentX and 0xff).toByte()
+            )
+        )
     }
 
     /**
@@ -184,10 +178,13 @@ object BleWrapper {
      * @param angle
      */
     fun setVerticalMoveAngle(angle: Int) {
-        //这个跟您原先的接口保持一致,但需要一个当前角度的返回值,
-        //以便我们能够知道当前是否转到了最大值,后期我们需要这个最大值来进行停职云台动作
-        currentY = max(0, min(maxLimitVerticalAngle, angle))
-        setAngle()
+        val currentY = max(0, min(maxLimitVerticalAngle, angle))
+        writeData(
+            Protocol.createMessage(
+                Protocol.TYPE_SERVO, Protocol.CTL_V_SERVO, 2,
+                ((currentY shr 8) and 0xFF).toByte(), (currentY and 0xff).toByte()
+            )
+        )
     }
 
     /**
@@ -225,18 +222,18 @@ object BleWrapper {
      * 获取当前的角度，这个是上面设置的，底部的不一定是这个角度，用registerMessageCallback实时监听底部数据回传
      * @see registerMessageCallback
      */
-    @Deprecated("Not real horizontal angle, please use registerMessageCallback", ReplaceWith("registerMessageCallback"))
+    @Deprecated("Don't use it. please use registerMessageCallback", ReplaceWith("registerMessageCallback"))
     fun getCurrentHorizontalAngle(): Int {
-        return currentX
+        return -1
     }
 
     /**
      * 获取当前的角度，这个是上面设置的，底部的不一定是这个角度，用registerMessageCallback实时监听底部数据回传
      * @see registerMessageCallback
      */
-    @Deprecated("Not real vertical angle, please use registerMessageCallback", ReplaceWith("registerMessageCallback"))
+    @Deprecated("Don't use it. please use registerMessageCallback", ReplaceWith("registerMessageCallback"))
     fun getCurrentVerticalAngle(): Int {
-        return currentY
+        return -1
     }
 
     /**
