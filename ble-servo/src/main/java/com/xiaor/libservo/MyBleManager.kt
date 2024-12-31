@@ -21,6 +21,9 @@ import com.clj.fastble.callback.BleWriteCallback
 import com.clj.fastble.data.BleDevice
 import com.clj.fastble.data.BleScanState
 import com.clj.fastble.exception.BleException
+import com.clj.fastble.scan.BleScanRuleConfig
+import kotlin.math.log
+
 
 class MyBleManager {
 
@@ -34,9 +37,11 @@ class MyBleManager {
     private val uuidCharacteristicNotify = "0000ffe1-0000-1000-8000-00805f9b34fb"
     private val bleName = "XiaoRGEEK"
     private var isRequestPermissions = false
+// 是否启动近场连接
+    var enableRssi = true
 
 //    近场连接蓝牙的信号要求强度
-    var nearRssi = -90
+    var nearRssi = -120
 
 
     private fun addPermissions() {
@@ -132,20 +137,32 @@ class MyBleManager {
                 return
             }
         }
-        cancelScan()
+        disconnect()
         bleStatusListener?.onStatusChanged(BleStatus.CONNECTING)
+        var isStartScan = false
+        var isOnScanning = false
         BleManager.getInstance().scan(object : BleScanCallback() {
             override fun onScanStarted(success: Boolean) {
                 Log.d(TAG, "onScanStarted: $success")
+                isStartScan = success
             }
 
             override fun onScanning(bleDevice: BleDevice) {
+                isOnScanning = true
                 if (bleDevice.name != null){
                     if(bleDevice.name.startsWith(bleName, true)) {
-                        if (bleDevice.rssi >= nearRssi) {
-//                            myBleDevice = bleDevice
+                        if (enableRssi){
+                            Log.d(TAG, "onScanning: 当前蓝牙: ${bleDevice.name} 当前信号强度: ${bleDevice.rssi}, 设置的近场连接强度: $nearRssi")
+                            if (bleDevice.rssi >= nearRssi) {
+                                connectBle(bleDevice)
+                            }else{
+                                Log.w(TAG, "onScanning: 当前蓝牙 ${bleDevice.name} 信号强度小于设置的近场蓝牙信号强度，不予连接\n" +
+                                        "如需连接，可以减小nearRssi的值或者设置enableRssi=false")
+                            }
+                        }else{
                             connectBle(bleDevice)
                         }
+
                     }
                 }
             }
@@ -154,13 +171,18 @@ class MyBleManager {
                 if (myBleDevice == null) {
                     bleStatusListener?.onStatusChanged(BleStatus.FAILURE)
                 }
+                if (isStartScan && !isOnScanning){
+                    Log.e(TAG, "onScanFinished: could not find callback wrapper" )
+                    bleStatusListener?.onStatusChanged(BleStatus.NO_CALLBACK)
+                }
+                isStartScan = false
+                isOnScanning = false
             }
         })
     }
 
     fun connectBle(bleDevice: BleDevice) {
-        myBleDevice = bleDevice
-        BleManager.getInstance().connect(myBleDevice, object : BleGattCallback() {
+        BleManager.getInstance().connect(bleDevice, object : BleGattCallback() {
             override fun onStartConnect() {
                 Log.d(TAG, "onStartConnect: start connect ble")
                 bleStatusListener?.onStatusChanged(BleStatus.CONNECTING)
@@ -173,7 +195,8 @@ class MyBleManager {
             }
 
             override fun onConnectSuccess(bleDevice: BleDevice, gatt: BluetoothGatt, status: Int) {
-                Log.d(TAG, "onConnectSuccess: ${bleDevice.name} connected")
+                Log.w(TAG, "onConnectSuccess: ${bleDevice.name} connected")
+                myBleDevice = bleDevice
                 cancelScan()
                 startNotify()
                 bleStatusListener?.onStatusChanged(BleStatus.CONNECTED)
@@ -371,6 +394,14 @@ class MyBleManager {
     fun init(application: Application) {
         BleManager.getInstance().init(application)
         BleManager.getInstance().enableLog(false)
+        val scanRuleConfig = BleScanRuleConfig.Builder()
+//            .setServiceUuids(serviceUuids)
+//            .setDeviceName(true, names)
+//            .setDeviceMac(mac)
+//            .setAutoConnect(isAutoConnect)
+            .setScanTimeOut(6000)
+            .build()
+        BleManager.getInstance().initScanRule(scanRuleConfig)
     }
 
     fun destroy() {

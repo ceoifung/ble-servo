@@ -121,14 +121,23 @@
             android:layout_height="wrap_content"
             android:text="发送"/>
 
+
+
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
         <Button
             android:id="@+id/btnReverseAngle"
-            android:visibility="gone"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="模拟查找人脸"/>
+        <Button
+            android:id="@+id/btnFindFace"
             android:layout_marginStart="10dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="循环"/>
-
+            android:text="模拟找到人脸"/>
     </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"

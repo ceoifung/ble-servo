@@ -2,7 +2,6 @@ package com.xiaor.ble
 
 import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
-import android.util.Log
 import android.widget.Button
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
@@ -16,11 +15,12 @@ import com.xiaor.libservo.KeyMsg
 import com.xiaor.libservo.LightColor
 import com.xiaor.libservo.MyBleManager
 import com.xiaor.libservo.PowerStatus
-import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var tvLog:TextView
+
+    private var curAngle = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,8 +42,8 @@ class MainActivity : AppCompatActivity() {
 
         val tvHAngle = findViewById<TextView>(R.id.tvHAngle)
         val tvVAngle = findViewById<TextView>(R.id.tvVAngle)
-        var isConntinueAdd = false
-        var isConntinueMinus = false
+        var isContinueAdd = false
+        var isContinueMinus = false
 
 
         findViewById<SeekBar>(R.id.hSeekbar).setOnSeekBarChangeListener(object :
@@ -80,24 +80,65 @@ class MainActivity : AppCompatActivity() {
         })
 
         var isReverse = false
+        var isReverse2 = false
+        var findFace = false
+        var startFindFace = false
+        var count = 0
+        var restoreAngle = 0
 
         MyBleManager.getDefault().requestPermissions(this)
         BleWrapper.registerMessageCallback(object :BleWrapper.IMessageCallbackListener{
 
             override fun onBoardStatusCallback(boardMsg: BoardMsg) {
-                if (isReverse){
-                    appendLog("hAngle: ${boardMsg.horizontalAngle}, isH: ${boardMsg.isHorizontalInCtl}, vAngle: ${boardMsg.verticalAngle}, isV: ${boardMsg.isVerticalInCtl}")
-                    if (boardMsg.horizontalAngle <=10){
-                        BleWrapper.setHorizontalMoveAngle(180)
-                    }else if(boardMsg.horizontalAngle >= 180){
+                curAngle = boardMsg.horizontalAngle
+                if (startFindFace){
+                    if (count == 0){
+                        if (curAngle <= 90){
+                            appendLog("当前角度小于90，向0°转")
+                            BleWrapper.setHorizontalMoveAngle(0)
+                            count ++
+                        }else{
+                            appendLog("当前角度大于90，向180°转")
+                            BleWrapper.setHorizontalMoveAngle(180)
+                            count ++
+                        }
+                        return
+                    }
+                    if (findFace){
+                        appendLog("找到人脸了")
+                        BleWrapper.stopMove()
+                        startFindFace = false
+                        count = 0
+                        isReverse = false
+                        isReverse2 = false
+                        return
+                    }
+                    appendLog("计数：${count}, 当前角度：${boardMsg.horizontalAngle}")
+                    if (count > 2){
+                        startFindFace = false
+                        isReverse2 = false
+                        isReverse = false
+                        appendLog("已经找了两圈了，没有找到, 回复角度：${restoreAngle}")
+                        BleWrapper.setHorizontalMoveAngle(restoreAngle)
+                        return
+                    }
+                    if (curAngle >= 175){
+                        if (isReverse){
+                            return
+                        }
+                        isReverse = true
                         BleWrapper.setHorizontalMoveAngle(0)
+                        count ++
+                    }else if(curAngle <= 10){
+                        if (isReverse2){
+                            return
+                        }
+                        isReverse2 = true
+                        BleWrapper.setHorizontalMoveAngle(180)
+                        count ++
                     }
                 }else{
-                    if (!isConntinueAdd && !isConntinueMinus){
-                        appendLog("收到电源板数据：${boardMsg}")
-                    }else{
-                        appendLog("hAngle: ${boardMsg.horizontalAngle}, isH: ${boardMsg.isHorizontalInCtl}, vAngle: ${boardMsg.verticalAngle}, isV: ${boardMsg.isVerticalInCtl}")
-                    }
+                    appendLog("收到数据：$boardMsg")
                 }
             }
 
@@ -110,11 +151,11 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onRawDataCallback(data: ByteArray) {
-                if (!isReverse && !isConntinueAdd && !isConntinueMinus){
-                    appendLog("收到原始数据：${data.joinToString(separator = "") { byte ->
-                        "%02x ".format(byte)
-                    }}")
-                }
+//                if (!startFindFace && !isContinueAdd && !isContinueMinus){
+//                    appendLog("收到原始数据：${data.joinToString(separator = "") { byte ->
+//                        "%02x ".format(byte)
+//                    }}")
+//                }
             }
 
         })
@@ -148,28 +189,26 @@ class MainActivity : AppCompatActivity() {
             BleWrapper.setVerticalMoveStep(-3)
         }
 
-
-
         findViewById<Button>(R.id.btnStopMove).setOnClickListener {
-            isConntinueAdd = false
-            isConntinueMinus = false
+            isContinueAdd = false
+            isContinueMinus = false
             BleWrapper.stopMove()
         }
         findViewById<Button>(R.id.btnContinueAdd).setOnClickListener {
-            isConntinueAdd = true
-            isConntinueMinus = false
+            isContinueAdd = true
+            isContinueMinus = false
             Thread{
-                while (isConntinueAdd){
+                while (isContinueAdd){
                     BleWrapper.setMotorMoveStep(3, 3)
                     Thread.sleep(50)
                 }
             }.start()
         }
         findViewById<Button>(R.id.btnContinueMinus).setOnClickListener {
-            isConntinueMinus = true
-            isConntinueAdd = false
+            isContinueMinus = true
+            isContinueAdd = false
             Thread{
-                while (isConntinueMinus){
+                while (isContinueMinus){
                     BleWrapper.setMotorMoveStep(-3, -3)
                     Thread.sleep(50)
                 }
@@ -177,14 +216,19 @@ class MainActivity : AppCompatActivity() {
         }
         val btnReverse = findViewById<Button>(R.id.btnReverseAngle)
         btnReverse.setOnClickListener {
-            isReverse = !isReverse
-            if (isReverse){
-                BleWrapper.setHorizontalMoveAngle(180)
-                btnReverse.text = "停止"
-            }else{
-                btnReverse.text = "循环"
-                BleWrapper.stopMove()
-            }
+            appendLog("开始查找人脸，当前水平角度: $curAngle")
+            startFindFace = true
+            findFace = false
+            isReverse2 = false
+            isReverse = false
+            count = 0
+            restoreAngle = curAngle
+
+        }
+
+        findViewById<Button>(R.id.btnFindFace).setOnClickListener {
+            appendLog("找到人脸，当前水平角度: ${curAngle}")
+            findFace = true
         }
     }
 
@@ -219,6 +263,13 @@ class MainActivity : AppCompatActivity() {
         MyBleManager.getDefault().onRequestPermissionsResult(this, requestCode, object :MyBleManager.BleStatusListener{
             override fun onStatusChanged(bleStatus: BleStatus) {
                 appendLog("蓝牙链接状态：${bleStatus}")
+                if (bleStatus == BleStatus.FAILURE){
+                    appendLog("尝试重新连接蓝牙")
+                    MyBleManager.getDefault().scanAndConnectBle(this@MainActivity)
+                }else if (bleStatus == BleStatus.NO_CALLBACK){
+                    MyBleManager.getDefault().disconnect()
+                    MyBleManager.getDefault().scanAndConnectBle(this@MainActivity)
+                }
             }
         })
     }

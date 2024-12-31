@@ -10,9 +10,10 @@ package com.xiaor.libservo
  *      NOT_YET_CONNECTED 尚未连接
  *      NOT_ENABLED 蓝牙未打开
  *      SEND_FAILURE 发送数据失败
+ *      NO_CALLBACK 蓝牙扫描太过频繁，导致系统没有回调，检测到这个标志位之后，调用disconnect, 然后再重新扫描连接或者延时一下
  *
  */
 enum class BleStatus {
     CONNECTED, DISCONNECTED, CONNECTING, FAILURE, NOT_YET_CONNECTED, NOT_ENABLED,
-    SEND_FAILURE
+    SEND_FAILURE, NO_CALLBACK
 }
