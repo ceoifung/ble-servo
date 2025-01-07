@@ -100,7 +100,11 @@ class MainActivity : AppCompatActivity() {
 
             override fun onBoardStatusCallback(boardMsg: BoardMsg) {
                 curAngle = boardMsg.horizontalAngle
+                if (!boardMsg.isHorizontalInCtl || !boardMsg.isVerticalInCtl) {
+                    appendLog("遇到障碍物了，请下发stopMove接口")
+                }
                 if (startFindFace){
+
                     if (count == 0){
                         if (curAngle <= 90){
                             appendLog("当前角度小于90，向0°转")
