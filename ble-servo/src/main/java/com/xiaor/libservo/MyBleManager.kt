@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Activity
 import android.app.Application
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -150,7 +151,9 @@ class MyBleManager {
             override fun onScanning(bleDevice: BleDevice) {
                 isOnScanning = true
                 if (bleDevice.name != null){
+
                     if(bleDevice.name.startsWith(bleName, true)) {
+                        bleStatusListener?.onBleDeviceFound(bleDevice.device)
                         if (enableRssi){
                             Log.d(TAG, "onScanning: 当前蓝牙: ${bleDevice.name} 当前信号强度: ${bleDevice.rssi}, 设置的近场连接强度: $nearRssi")
                             if (bleDevice.rssi >= nearRssi) {
@@ -171,6 +174,7 @@ class MyBleManager {
                 if (myBleDevice == null) {
                     bleStatusListener?.onStatusChanged(BleStatus.FAILURE)
                 }
+
                 if (isStartScan && !isOnScanning){
                     Log.e(TAG, "onScanFinished: could not find callback wrapper" )
                     bleStatusListener?.onStatusChanged(BleStatus.NO_CALLBACK)
@@ -179,6 +183,14 @@ class MyBleManager {
                 isOnScanning = false
             }
         })
+    }
+
+    /**
+     * 连接蓝牙设备
+     */
+    fun connectBle(bleDevice: BluetoothDevice){
+        val device = BleDevice(bleDevice)
+        connectBle(device)
     }
 
     fun connectBle(bleDevice: BleDevice) {
@@ -218,6 +230,16 @@ class MyBleManager {
         if (BleManager.getInstance().scanSate == BleScanState.STATE_SCANNING) {
             BleManager.getInstance().cancelScan()
         }
+    }
+
+    /**
+     * 获取当前连接的蓝牙设备名称
+     */
+    fun getConnectedBleDevice(): String{
+        return if (myBleDevice != null)
+            myBleDevice!!.name
+        else
+            ""
     }
 
     /**
@@ -285,8 +307,8 @@ class MyBleManager {
                     }
 
                     override fun onWriteFailure(exception: BleException) {
-                        Log.e(TAG, "onWriteFailure: ${exception.description}")
-                        bleStatusListener?.onStatusChanged(BleStatus.SEND_FAILURE)
+                        Log.e(TAG, "onWriteFailure: may be too frequently, slow it down${exception.description}")
+                        bleStatusListener?.onStatusChanged(BleStatus.TOO_FREQUENTLY)
                     }
                 })
         }.start()
@@ -395,11 +417,7 @@ class MyBleManager {
         BleManager.getInstance().init(application)
         BleManager.getInstance().enableLog(false)
         val scanRuleConfig = BleScanRuleConfig.Builder()
-//            .setServiceUuids(serviceUuids)
-//            .setDeviceName(true, names)
-//            .setDeviceMac(mac)
-//            .setAutoConnect(isAutoConnect)
-            .setScanTimeOut(6000)
+            .setScanTimeOut(10000)
             .build()
         BleManager.getInstance().initScanRule(scanRuleConfig)
     }
@@ -486,7 +504,15 @@ class MyBleManager {
     }
 
     interface BleStatusListener {
+        /**
+         * 蓝牙连接状态回调
+         */
         fun onStatusChanged(bleStatus: BleStatus)
+
+        /**
+         * 扫描到的能识别到的蓝牙设备
+         */
+        fun onBleDeviceFound(bleDevice: BluetoothDevice)
     }
 
     class BleReceiver : BroadcastReceiver() {

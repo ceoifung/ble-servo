@@ -1,8 +1,12 @@
 package com.xiaor.ble
 
+import android.annotation.SuppressLint
+import android.bluetooth.BluetoothDevice
 import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
+import android.util.Log
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Spinner
@@ -15,6 +19,10 @@ import com.xiaor.libservo.KeyMsg
 import com.xiaor.libservo.LightColor
 import com.xiaor.libservo.MyBleManager
 import com.xiaor.libservo.PowerStatus
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -85,6 +93,7 @@ class MainActivity : AppCompatActivity() {
         var startFindFace = false
         var count = 0
         var restoreAngle = 0
+        var isBanReceived = false
 
         MyBleManager.getDefault().requestPermissions(this)
         BleWrapper.registerMessageCallback(object :BleWrapper.IMessageCallbackListener{
@@ -138,7 +147,9 @@ class MainActivity : AppCompatActivity() {
                         count ++
                     }
                 }else{
-                    appendLog("收到数据：$boardMsg")
+                    if (!isBanReceived){
+                        appendLog("收到数据：$boardMsg")
+                    }
                 }
             }
 
@@ -151,11 +162,11 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onRawDataCallback(data: ByteArray) {
-//                if (!startFindFace && !isContinueAdd && !isContinueMinus){
-//                    appendLog("收到原始数据：${data.joinToString(separator = "") { byte ->
-//                        "%02x ".format(byte)
-//                    }}")
-//                }
+                if (!startFindFace && !isContinueAdd && !isContinueMinus && !isBanReceived){
+                    appendLog("收到原始数据：${data.joinToString(separator = "") { byte ->
+                        "%02x ".format(byte)
+                    }}")
+                }
             }
 
         })
@@ -227,8 +238,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<Button>(R.id.btnFindFace).setOnClickListener {
-            appendLog("找到人脸，当前水平角度: ${curAngle}")
+            appendLog("找到人脸，当前水平角度: $curAngle")
             findFace = true
+        }
+
+        findViewById<CheckBox>(R.id.checkboxBan).setOnCheckedChangeListener { buttonView, isChecked ->
+            isBanReceived = isChecked
         }
     }
 
@@ -267,9 +282,24 @@ class MainActivity : AppCompatActivity() {
                     appendLog("尝试重新连接蓝牙")
                     MyBleManager.getDefault().scanAndConnectBle(this@MainActivity)
                 }else if (bleStatus == BleStatus.NO_CALLBACK){
-                    MyBleManager.getDefault().disconnect()
-                    MyBleManager.getDefault().scanAndConnectBle(this@MainActivity)
+//                    延时一秒重新连接
+                    CoroutineScope(Dispatchers.IO).launch {
+                        Log.e(TAG, "onStatusChanged: 延时一秒重新连接" )
+                        delay(1000L)
+                        MyBleManager.getDefault().disconnect()
+                        MyBleManager.getDefault().scanAndConnectBle(this@MainActivity)
+                    }
+
+                }else if (bleStatus == BleStatus.TOO_FREQUENTLY){
+                    Log.e(TAG, "onStatusChanged: 数据发送过于频繁或者出错了", )
+                }else if (bleStatus == BleStatus.CONNECTED){
+                    appendLog("已连接蓝牙: ${MyBleManager.getDefault().getConnectedBleDevice()}")
                 }
+            }
+
+            @SuppressLint("MissingPermission")
+            override fun onBleDeviceFound(bleDevice: BluetoothDevice) {
+                appendLog("扫描到匹配的蓝牙: ${bleDevice.name}")
             }
         })
     }
