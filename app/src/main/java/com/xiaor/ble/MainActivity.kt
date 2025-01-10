@@ -95,6 +95,7 @@ class MainActivity : AppCompatActivity() {
         var restoreAngle = 0
         var isBanReceived = false
 
+        MyBleManager.getDefault().autoConnect = true
         MyBleManager.getDefault().requestPermissions(this)
         BleWrapper.registerMessageCallback(object :BleWrapper.IMessageCallbackListener{
 

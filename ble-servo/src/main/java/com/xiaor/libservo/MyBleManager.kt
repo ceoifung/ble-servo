@@ -38,13 +38,14 @@ class MyBleManager {
     private val uuidCharacteristicNotify = "0000ffe1-0000-1000-8000-00805f9b34fb"
     private val bleName = "XiaoRGEEK"
     private var isRequestPermissions = false
-// 是否启动近场连接
+
+    // 是否启动近场连接
     var enableRssi = true
 
-//    近场连接蓝牙的信号要求强度
+    //    近场连接蓝牙的信号要求强度
     var nearRssi = -120
-
-    var autoConnect = true
+//    是否开启自动连接蓝牙设备
+    var autoConnect = false
 
 
     private fun addPermissions() {
@@ -87,7 +88,7 @@ class MyBleManager {
                         }
                     } else {
                         Log.e(TAG, "onHasPermission: not has permission")
-                        if (isRequestPermissions){
+                        if (isRequestPermissions) {
                             return
                         }
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -144,7 +145,7 @@ class MyBleManager {
         bleStatusListener?.onStatusChanged(BleStatus.CONNECTING)
         var isStartScan = false
         var isOnScanning = false
-        val bleList = mutableListOf<BleDevice>()
+//        val bleList = mutableListOf<BleDevice>()
         BleManager.getInstance().scan(object : BleScanCallback() {
             override fun onScanStarted(success: Boolean) {
                 Log.d(TAG, "onScanStarted: $success")
@@ -153,41 +154,47 @@ class MyBleManager {
 
             override fun onScanning(bleDevice: BleDevice) {
                 isOnScanning = true
-                if (bleDevice.name != null){
+                if (bleDevice.name != null) {
 
-                    if(bleDevice.name.startsWith(bleName, true)) {
-                        Log.w(TAG, "onScanning: found device: ${bleDevice.name} ${bleDevice.mac}, ${bleDevice.rssi}" )
-                        bleStatusListener?.onBleDeviceFound(bleDevice.device, bleDevice.rssi, bleDevice.mac)
-                        bleList.add(bleDevice)
-//                        if (enableRssi){
-//                            Log.d(TAG, "onScanning: 当前蓝牙: ${bleDevice.name} 当前信号强度: ${bleDevice.rssi}, 设置的近场连接强度: $nearRssi")
-//                            if (bleDevice.rssi >= nearRssi) {
-//                                connectBle(bleDevice)
-//                            }else{
-//                                Log.w(TAG, "onScanning: 当前蓝牙 ${bleDevice.name} 信号强度小于设置的近场蓝牙信号强度，不予连接\n" +
-//                                        "如需连接，可以减小nearRssi的值或者设置enableRssi=false")
-//                            }
-//                        }else{
-//                            connectBle(bleDevice)
-//                        }
-
+                    if (bleDevice.name.startsWith(bleName, true)) {
+                        Log.w(
+                            TAG,
+                            "onScanning: found device: ${bleDevice.name} ${bleDevice.mac}, ${bleDevice.rssi}"
+                        )
+                        bleStatusListener?.onBleDeviceFound(
+                            bleDevice.device,
+                            bleDevice.rssi,
+                            bleDevice.mac
+                        )
+                        if (autoConnect) {
+                            if (enableRssi) {
+                                Log.d(
+                                    TAG,
+                                    "onScanning: 当前蓝牙: ${bleDevice.name} 当前信号强度: ${bleDevice.rssi}, 设置的近场连接强度: $nearRssi"
+                                )
+                                if (bleDevice.rssi >= nearRssi) {
+                                    connectBle(bleDevice)
+                                } else {
+                                    Log.w(
+                                        TAG,
+                                        "onScanning: 当前蓝牙 ${bleDevice.name} 信号强度小于设置的近场蓝牙信号强度，不予连接\n" +
+                                                "如需连接，可以减小nearRssi的值或者设置enableRssi=false"
+                                    )
+                                }
+                            } else {
+                                connectBle(bleDevice)
+                            }
+                        }
                     }
                 }
             }
 
             override fun onScanFinished(scanResultList: List<BleDevice>) {
-                if (myBleDevice == null) {
-                    bleStatusListener?.onStatusChanged(BleStatus.FAILURE)
-                }
-                if (bleList.isNotEmpty()){
-                    if (autoConnect){
-//                        如果开启自动连接
-                        bleDeviceListener.onFoundDevice(bleList)
-                    }
-                }
-
-                if (isStartScan && !isOnScanning){
-                    Log.e(TAG, "onScanFinished: could not find callback wrapper" )
+//                if (myBleDevice == null) {
+//                    bleStatusListener?.onStatusChanged(BleStatus.FAILURE)
+//                }
+                if (isStartScan && !isOnScanning) {
+                    Log.e(TAG, "onScanFinished: could not find callback wrapper")
                     bleStatusListener?.onStatusChanged(BleStatus.NO_CALLBACK)
                 }
                 isStartScan = false
@@ -199,7 +206,7 @@ class MyBleManager {
     /**
      * 连接蓝牙设备
      */
-    fun connectBle(bleDevice: BluetoothDevice){
+    fun connectBle(bleDevice: BluetoothDevice) {
         val device = BleDevice(bleDevice)
         connectBle(device)
     }
@@ -219,7 +226,10 @@ class MyBleManager {
             }
 
             override fun onConnectSuccess(bleDevice: BleDevice, gatt: BluetoothGatt, status: Int) {
-                Log.w(TAG, "onConnectSuccess: ${bleDevice.name} mac:${bleDevice.mac} rssi: ${bleDevice.rssi} connected")
+                Log.w(
+                    TAG,
+                    "onConnectSuccess: ${bleDevice.name} mac:${bleDevice.mac} rssi: ${bleDevice.rssi} connected"
+                )
                 myBleDevice = bleDevice
                 cancelScan()
                 startNotify()
@@ -241,7 +251,7 @@ class MyBleManager {
 
     fun cancelScan() {
         if (BleManager.getInstance().scanSate == BleScanState.STATE_SCANNING) {
-            Log.d(TAG, "cancelScan: now stop scanning...", )
+            Log.d(TAG, "cancelScan: now stop scanning...")
             BleManager.getInstance().cancelScan()
         }
     }
@@ -249,7 +259,7 @@ class MyBleManager {
     /**
      * 获取当前连接的蓝牙设备名称
      */
-    fun getConnectedBleDevice(): String{
+    fun getConnectedBleDevice(): String {
         return if (myBleDevice != null)
             myBleDevice!!.name
         else
@@ -288,7 +298,8 @@ class MyBleManager {
             })
     }
 
-    @Deprecated(message = "do not need context",
+    @Deprecated(
+        message = "do not need context",
         replaceWith = ReplaceWith("writeData(data.toByteArray())")
     )
     fun writeData(context: Context, data: String) {
@@ -299,7 +310,7 @@ class MyBleManager {
      * 发送数据
      * @param data bytes数组
      */
-    fun writeData(data: ByteArray){
+    fun writeData(data: ByteArray) {
         if (!isBleEnable()) {
             bleStatusListener?.onStatusChanged(BleStatus.NOT_ENABLED)
             throw Exception("bluetooth not enable")
@@ -308,7 +319,7 @@ class MyBleManager {
             bleStatusListener?.onStatusChanged(BleStatus.NOT_YET_CONNECTED)
             throw Exception("Not yet connect device")
         }
-        Thread{
+        Thread {
             BleManager.getInstance().write(
                 myBleDevice,
                 uuidService,
@@ -321,7 +332,10 @@ class MyBleManager {
                     }
 
                     override fun onWriteFailure(exception: BleException) {
-                        Log.e(TAG, "onWriteFailure: may be too frequently, slow it down, exception: ${exception.description}")
+                        Log.e(
+                            TAG,
+                            "onWriteFailure: may be too frequently, slow it down, exception: ${exception.description}"
+                        )
                         bleStatusListener?.onStatusChanged(BleStatus.TOO_FREQUENTLY)
                     }
                 })
@@ -332,12 +346,12 @@ class MyBleManager {
      * 发送数据
      * @param data
      */
-    fun writeData(data: String){
+    fun writeData(data: String) {
         writeData(data.toByteArray())
     }
 
     private fun startNotify() {
-        if (myBleDevice == null){
+        if (myBleDevice == null) {
             return
         }
         BleManager.getInstance().notify(
@@ -358,8 +372,8 @@ class MyBleManager {
                     if (data.isNotEmpty()) {
                         try {
                             BleWrapper.requestDataDecode(data)
-                        }catch (e: Exception){
-                            Log.e(TAG, "onCharacteristicChanged: 数据解析出错" )
+                        } catch (e: Exception) {
+                            Log.e(TAG, "onCharacteristicChanged: 数据解析出错")
                         }
                     }
                 }
@@ -371,8 +385,8 @@ class MyBleManager {
     }
 
     fun setMtu(mtu: Int) {
-        if (myBleDevice == null){
-            Log.e(TAG, "setMtu: ble device cannot be null" )
+        if (myBleDevice == null) {
+            Log.e(TAG, "setMtu: ble device cannot be null")
             return
         }
         BleManager.getInstance().setMtu(myBleDevice, mtu, object : BleMtuChangedCallback() {
@@ -389,13 +403,13 @@ class MyBleManager {
     fun disconnect() {
         cancelScan()
         stopNotify()
-        if (myBleDevice != null){
+        if (myBleDevice != null) {
             BleManager.getInstance().disconnect(myBleDevice)
         }
     }
 
     fun getRssi() {
-        if (myBleDevice == null){
+        if (myBleDevice == null) {
             return
         }
         BleManager.getInstance().readRssi(
@@ -480,11 +494,11 @@ class MyBleManager {
             registerBleReceiver(context, listener)
         } else if (requestCode == XRConstant.BLE_SCAN_REQUEST) {
             Log.d(TAG, "onRequestPermissionsResult: scan ble")
-            if (!isRequestPermissions){
+            if (!isRequestPermissions) {
                 scanAndConnectBle(context)
                 isRequestPermissions = true
-            }else{
-                Log.e(TAG, "onRequestPermissionsResult: 重复申请" )
+            } else {
+                Log.e(TAG, "onRequestPermissionsResult: 重复申请")
             }
         }
 
@@ -515,27 +529,6 @@ class MyBleManager {
                 Log.e(TAG, "unregisterBleReceiver: ${e.message}")
             }
         }
-    }
-    private lateinit var bleDeviceListener: BleDeviceScanResultListener
-    private var startConnecting = false
-    init {
-        bleDeviceListener = object:BleDeviceScanResultListener{
-            override fun onFoundDevice(devices: MutableList<BleDevice>) {
-                startConnecting = !startConnecting
-                if (startConnecting){
-                    Log.d(TAG, "onFoundDevice: 正在连接中，不在重复连接..." )
-                    return
-                }
-                devices.sortByDescending { it.rssi }
-                Log.w(TAG, "onScanFinished: 连接最强的蓝牙信号 ${devices[0].rssi}" )
-                connectBle(devices[0])
-            }
-
-        }
-    }
-
-    private interface BleDeviceScanResultListener {
-        fun onFoundDevice(devices: MutableList<BleDevice>)
     }
 
     interface BleStatusListener {
