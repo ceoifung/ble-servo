@@ -120,6 +120,10 @@ class MyBleManager {
             })
     }
 
+    /**
+     * 扫描并连接蓝牙，默认关闭自动连接
+     * @param context 上下文
+     */
     fun scanAndConnectBle(context: Context) {
         enableBle(context)
         if (PermissionUtils.checkMorePermissions(
@@ -145,7 +149,7 @@ class MyBleManager {
         bleStatusListener?.onStatusChanged(BleStatus.CONNECTING)
         var isStartScan = false
         var isOnScanning = false
-//        val bleList = mutableListOf<BleDevice>()
+        var startConnecting = false
         BleManager.getInstance().scan(object : BleScanCallback() {
             override fun onScanStarted(success: Boolean) {
                 Log.d(TAG, "onScanStarted: $success")
@@ -173,6 +177,7 @@ class MyBleManager {
                                     "onScanning: 当前蓝牙: ${bleDevice.name} 当前信号强度: ${bleDevice.rssi}, 设置的近场连接强度: $nearRssi"
                                 )
                                 if (bleDevice.rssi >= nearRssi) {
+                                    startConnecting = true
                                     connectBle(bleDevice)
                                 } else {
                                     Log.w(
@@ -182,6 +187,7 @@ class MyBleManager {
                                     )
                                 }
                             } else {
+                                startConnecting = true
                                 connectBle(bleDevice)
                             }
                         }
@@ -190,9 +196,10 @@ class MyBleManager {
             }
 
             override fun onScanFinished(scanResultList: List<BleDevice>) {
-//                if (myBleDevice == null) {
-//                    bleStatusListener?.onStatusChanged(BleStatus.FAILURE)
-//                }
+                if (!startConnecting && autoConnect){
+                    Log.d(TAG, "onScanFinished: 开启了自动连接，但是没有找到任何设备")
+                    bleStatusListener?.onStatusChanged(BleStatus.FAILURE)
+                }
                 if (isStartScan && !isOnScanning) {
                     Log.e(TAG, "onScanFinished: could not find callback wrapper")
                     bleStatusListener?.onStatusChanged(BleStatus.NO_CALLBACK)
