@@ -100,9 +100,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun onBoardStatusCallback(boardMsg: BoardMsg) {
                 curAngle = boardMsg.horizontalAngle
-                if (!boardMsg.isHorizontalInCtl || !boardMsg.isVerticalInCtl) {
-                    appendLog("遇到障碍物了，请下发stopMove接口")
-                }
+
                 if (startFindFace){
 
                     if (count == 0){
@@ -152,6 +150,9 @@ class MainActivity : AppCompatActivity() {
                     }
                 }else{
                     if (!isBanReceived){
+                        if (!boardMsg.isHorizontalInCtl || !boardMsg.isVerticalInCtl) {
+                            appendLog("遇到障碍物了，请下发stopMove接口")
+                        }
                         appendLog("收到数据：$boardMsg")
                     }
                 }
@@ -289,7 +290,7 @@ class MainActivity : AppCompatActivity() {
 //                    延时一秒重新连接
                     CoroutineScope(Dispatchers.IO).launch {
                         Log.e(TAG, "onStatusChanged: 延时一秒重新连接" )
-                        delay(1000L)
+                        delay(2000L)
                         MyBleManager.getDefault().disconnect()
                         MyBleManager.getDefault().scanAndConnectBle(this@MainActivity)
                     }
@@ -302,8 +303,8 @@ class MainActivity : AppCompatActivity() {
             }
 
             @SuppressLint("MissingPermission")
-            override fun onBleDeviceFound(bleDevice: BluetoothDevice) {
-                appendLog("扫描到匹配的蓝牙: ${bleDevice.name}")
+            override fun onBleDeviceFound(bleDevice: BluetoothDevice, rssi: Int, mac:String) {
+                appendLog("扫描到匹配的蓝牙: ${bleDevice.name}, 信号强度：${rssi}, mac: $mac")
             }
         })
     }

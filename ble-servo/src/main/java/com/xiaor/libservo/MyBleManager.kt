@@ -44,6 +44,8 @@ class MyBleManager {
 //    近场连接蓝牙的信号要求强度
     var nearRssi = -120
 
+    var autoConnect = true
+
 
     private fun addPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -142,6 +144,7 @@ class MyBleManager {
         bleStatusListener?.onStatusChanged(BleStatus.CONNECTING)
         var isStartScan = false
         var isOnScanning = false
+        val bleList = mutableListOf<BleDevice>()
         BleManager.getInstance().scan(object : BleScanCallback() {
             override fun onScanStarted(success: Boolean) {
                 Log.d(TAG, "onScanStarted: $success")
@@ -153,18 +156,20 @@ class MyBleManager {
                 if (bleDevice.name != null){
 
                     if(bleDevice.name.startsWith(bleName, true)) {
-                        bleStatusListener?.onBleDeviceFound(bleDevice.device)
-                        if (enableRssi){
-                            Log.d(TAG, "onScanning: 当前蓝牙: ${bleDevice.name} 当前信号强度: ${bleDevice.rssi}, 设置的近场连接强度: $nearRssi")
-                            if (bleDevice.rssi >= nearRssi) {
-                                connectBle(bleDevice)
-                            }else{
-                                Log.w(TAG, "onScanning: 当前蓝牙 ${bleDevice.name} 信号强度小于设置的近场蓝牙信号强度，不予连接\n" +
-                                        "如需连接，可以减小nearRssi的值或者设置enableRssi=false")
-                            }
-                        }else{
-                            connectBle(bleDevice)
-                        }
+                        Log.w(TAG, "onScanning: found device: ${bleDevice.name} ${bleDevice.mac}, ${bleDevice.rssi}" )
+                        bleStatusListener?.onBleDeviceFound(bleDevice.device, bleDevice.rssi, bleDevice.mac)
+                        bleList.add(bleDevice)
+//                        if (enableRssi){
+//                            Log.d(TAG, "onScanning: 当前蓝牙: ${bleDevice.name} 当前信号强度: ${bleDevice.rssi}, 设置的近场连接强度: $nearRssi")
+//                            if (bleDevice.rssi >= nearRssi) {
+//                                connectBle(bleDevice)
+//                            }else{
+//                                Log.w(TAG, "onScanning: 当前蓝牙 ${bleDevice.name} 信号强度小于设置的近场蓝牙信号强度，不予连接\n" +
+//                                        "如需连接，可以减小nearRssi的值或者设置enableRssi=false")
+//                            }
+//                        }else{
+//                            connectBle(bleDevice)
+//                        }
 
                     }
                 }
@@ -173,6 +178,12 @@ class MyBleManager {
             override fun onScanFinished(scanResultList: List<BleDevice>) {
                 if (myBleDevice == null) {
                     bleStatusListener?.onStatusChanged(BleStatus.FAILURE)
+                }
+                if (bleList.isNotEmpty()){
+                    if (autoConnect){
+//                        如果开启自动连接
+                        bleDeviceListener.onFoundDevice(bleList)
+                    }
                 }
 
                 if (isStartScan && !isOnScanning){
@@ -194,6 +205,7 @@ class MyBleManager {
     }
 
     fun connectBle(bleDevice: BleDevice) {
+        cancelScan()
         BleManager.getInstance().connect(bleDevice, object : BleGattCallback() {
             override fun onStartConnect() {
                 Log.d(TAG, "onStartConnect: start connect ble")
@@ -207,7 +219,7 @@ class MyBleManager {
             }
 
             override fun onConnectSuccess(bleDevice: BleDevice, gatt: BluetoothGatt, status: Int) {
-                Log.w(TAG, "onConnectSuccess: ${bleDevice.name} connected")
+                Log.w(TAG, "onConnectSuccess: ${bleDevice.name} mac:${bleDevice.mac} rssi: ${bleDevice.rssi} connected")
                 myBleDevice = bleDevice
                 cancelScan()
                 startNotify()
@@ -221,6 +233,7 @@ class MyBleManager {
                 status: Int
             ) {
                 Log.e(TAG, "onDisConnected: ble disconnect")
+                myBleDevice = null
                 bleStatusListener?.onStatusChanged(BleStatus.DISCONNECTED)
             }
         })
@@ -228,6 +241,7 @@ class MyBleManager {
 
     fun cancelScan() {
         if (BleManager.getInstance().scanSate == BleScanState.STATE_SCANNING) {
+            Log.d(TAG, "cancelScan: now stop scanning...", )
             BleManager.getInstance().cancelScan()
         }
     }
@@ -303,11 +317,11 @@ class MyBleManager {
                 false,
                 object : BleWriteCallback() {
                     override fun onWriteSuccess(current: Int, total: Int, justWrite: ByteArray) {
-                        Log.d(TAG, "onWriteSuccess: write success")
+//                        Log.d(TAG, "onWriteSuccess: write success")
                     }
 
                     override fun onWriteFailure(exception: BleException) {
-                        Log.e(TAG, "onWriteFailure: may be too frequently, slow it down${exception.description}")
+                        Log.e(TAG, "onWriteFailure: may be too frequently, slow it down, exception: ${exception.description}")
                         bleStatusListener?.onStatusChanged(BleStatus.TOO_FREQUENTLY)
                     }
                 })
@@ -416,10 +430,10 @@ class MyBleManager {
     fun init(application: Application) {
         BleManager.getInstance().init(application)
         BleManager.getInstance().enableLog(false)
-        val scanRuleConfig = BleScanRuleConfig.Builder()
-            .setScanTimeOut(10000)
-            .build()
-        BleManager.getInstance().initScanRule(scanRuleConfig)
+//        val scanRuleConfig = BleScanRuleConfig.Builder()
+//            .setScanTimeOut(10000)
+//            .build()
+//        BleManager.getInstance().initScanRule(scanRuleConfig)
     }
 
     fun destroy() {
@@ -502,6 +516,27 @@ class MyBleManager {
             }
         }
     }
+    private lateinit var bleDeviceListener: BleDeviceScanResultListener
+    private var startConnecting = false
+    init {
+        bleDeviceListener = object:BleDeviceScanResultListener{
+            override fun onFoundDevice(devices: MutableList<BleDevice>) {
+                startConnecting = !startConnecting
+                if (startConnecting){
+                    Log.d(TAG, "onFoundDevice: 正在连接中，不在重复连接..." )
+                    return
+                }
+                devices.sortByDescending { it.rssi }
+                Log.w(TAG, "onScanFinished: 连接最强的蓝牙信号 ${devices[0].rssi}" )
+                connectBle(devices[0])
+            }
+
+        }
+    }
+
+    private interface BleDeviceScanResultListener {
+        fun onFoundDevice(devices: MutableList<BleDevice>)
+    }
 
     interface BleStatusListener {
         /**
@@ -512,7 +547,7 @@ class MyBleManager {
         /**
          * 扫描到的能识别到的蓝牙设备
          */
-        fun onBleDeviceFound(bleDevice: BluetoothDevice)
+        fun onBleDeviceFound(bleDevice: BluetoothDevice, rssi: Int, mac: String)
     }
 
     class BleReceiver : BroadcastReceiver() {
