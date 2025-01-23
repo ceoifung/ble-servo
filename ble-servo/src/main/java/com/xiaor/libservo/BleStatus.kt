@@ -3,6 +3,7 @@ package com.xiaor.libservo
 /**
  * 蓝牙状态
  *
+ *      SCANNING  正在扫描蓝牙设备
  *      CONNECTED 已连接或链接成功
  *      DISCONNECTED 已断连
  *      CONNECTING 正在连接
@@ -16,5 +17,5 @@ package com.xiaor.libservo
  */
 enum class BleStatus {
     CONNECTED, DISCONNECTED, CONNECTING, FAILURE, NOT_YET_CONNECTED, NOT_ENABLED,
-    SEND_FAILURE, TOO_FREQUENTLY, NO_CALLBACK
+    SEND_FAILURE, TOO_FREQUENTLY, NO_CALLBACK, SCANNING
 }

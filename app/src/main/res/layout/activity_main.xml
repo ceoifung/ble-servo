@@ -122,6 +122,7 @@
             android:text="发送"/>
         <CheckBox
             android:id="@+id/checkboxBan"
+            android:checked="true"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="屏蔽接收"/>
@@ -189,6 +190,11 @@
             android:layout_height="wrap_content"
             android:text="停止运动"/>
     </LinearLayout>
+    <TextView
+        android:id="@+id/tvAppVersion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"/>
     <TextView
         android:id="@+id/tvLog"
         android:layout_marginTop="20dp"

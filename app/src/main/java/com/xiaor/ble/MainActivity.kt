@@ -2,6 +2,8 @@ package com.xiaor.ble
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
+import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.text.method.ScrollingMovementMethod
 import android.util.Log
@@ -93,7 +95,7 @@ class MainActivity : AppCompatActivity() {
         var startFindFace = false
         var count = 0
         var restoreAngle = 0
-        var isBanReceived = false
+        val banCheckBox = findViewById<CheckBox>(R.id.checkboxBan)
 
         MyBleManager.getDefault().autoConnect = true
         MyBleManager.getDefault().requestPermissions(this)
@@ -150,7 +152,7 @@ class MainActivity : AppCompatActivity() {
                         count ++
                     }
                 }else{
-                    if (!isBanReceived){
+                    if (!banCheckBox.isChecked){
                         if (!boardMsg.isHorizontalInCtl || !boardMsg.isVerticalInCtl) {
                             appendLog("遇到障碍物了，请下发stopMove接口")
                         }
@@ -168,7 +170,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onRawDataCallback(data: ByteArray) {
-                if (!startFindFace && !isContinueAdd && !isContinueMinus && !isBanReceived){
+                if (!startFindFace && !isContinueAdd && !isContinueMinus && !banCheckBox.isChecked){
                     appendLog("收到原始数据：${data.joinToString(separator = "") { byte ->
                         "%02x ".format(byte)
                     }}")
@@ -248,11 +250,39 @@ class MainActivity : AppCompatActivity() {
             findFace = true
         }
 
-        findViewById<CheckBox>(R.id.checkboxBan).setOnCheckedChangeListener { buttonView, isChecked ->
-            isBanReceived = isChecked
-        }
+//        findViewById<CheckBox>(R.id.checkboxBan).setOnCheckedChangeListener { buttonView, isChecked ->
+//            isBanReceived = isChecked
+//        }
+
+        findViewById<TextView>(R.id.tvAppVersion).text = getAppVersion(this)
     }
 
+    /**
+     * 获取应用版本信息
+     *
+     * 此函数尝试从给定的上下文中获取应用的版本号它首先获取应用的包名，
+     * 然后通过包管理器获取包信息如果成功获取到包信息，则返回版本号；
+     * 如果获取过程中发生NameNotFoundException异常，则表示未能找到包信息，
+     * 此时返回一个表示失败的字符串
+     *
+     * @param context 上下文，用于访问应用的包管理器
+     * @return 应用的版本信息字符串，如果获取失败则返回错误信息
+     */
+    private fun getAppVersion(context: Context): String {
+        // 获取应用的包名
+        val packageName = context.packageName
+        // 尝试获取应用的版本信息
+        return try {
+            // 通过包名获取包信息
+            val packageInfo = context.packageManager.getPackageInfo(packageName, 0)
+            // 返回版本号
+            "Ver ${packageInfo.versionName}"
+        } catch (e: PackageManager.NameNotFoundException) {
+            // 如果发生异常，打印异常信息并返回失败信息
+            e.printStackTrace()
+            "Failed to get version information"
+        }
+    }
     private fun appendLog(msg:String){
         tvLog.append(msg+"\n")
         val offset = getTextViewHeight()
@@ -274,7 +304,6 @@ class MainActivity : AppCompatActivity() {
         MyBleManager.getDefault().unregisterBleReceiver(this)
     }
 
-
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>,
@@ -284,28 +313,45 @@ class MainActivity : AppCompatActivity() {
         MyBleManager.getDefault().onRequestPermissionsResult(this, requestCode, object :MyBleManager.BleStatusListener{
             override fun onStatusChanged(bleStatus: BleStatus) {
                 appendLog("蓝牙链接状态：${bleStatus}")
-                if (bleStatus == BleStatus.FAILURE){
-                    appendLog("尝试重新连接蓝牙")
-                    MyBleManager.getDefault().scanAndConnectBle(this@MainActivity)
-                }else if (bleStatus == BleStatus.NO_CALLBACK){
-//                    延时一秒重新连接
-                    CoroutineScope(Dispatchers.IO).launch {
-                        Log.e(TAG, "onStatusChanged: 延时一秒重新连接" )
-                        delay(2000L)
-                        MyBleManager.getDefault().disconnect()
+                when (bleStatus) {
+                    BleStatus.FAILURE -> {
+                        appendLog("尝试重新连接蓝牙, reason: $bleStatus")
                         MyBleManager.getDefault().scanAndConnectBle(this@MainActivity)
                     }
+                    BleStatus.NO_CALLBACK -> {
+            //                    延时一秒重新连接
+                        CoroutineScope(Dispatchers.IO).launch {
+                            Log.e(TAG, "onStatusChanged: 延时一秒重新连接" )
+                            appendLog("延时2秒重新连接")
+                            delay(2000L)
+                            MyBleManager.getDefault().disconnect()
+                            MyBleManager.getDefault().scanAndConnectBle(this@MainActivity)
+                        }
 
-                }else if (bleStatus == BleStatus.TOO_FREQUENTLY){
-                    Log.e(TAG, "onStatusChanged: 数据发送过于频繁或者出错了", )
-                }else if (bleStatus == BleStatus.CONNECTED){
-                    appendLog("已连接蓝牙: ${MyBleManager.getDefault().getConnectedBleDevice()}")
+                    }
+                    BleStatus.TOO_FREQUENTLY -> {
+                        Log.e(TAG, "onStatusChanged: 数据发送过于频繁或者出错了", )
+                    }
+                    BleStatus.CONNECTED -> {
+                        appendLog("已连接蓝牙: ${MyBleManager.getDefault().getConnectedBleDevice()}")
+                    }
+
+                    BleStatus.DISCONNECTED -> {
+                        appendLog("蓝牙已断开连接")
+                    }
+                    else -> {
+
+                    }
                 }
             }
 
             @SuppressLint("MissingPermission")
             override fun onBleDeviceFound(bleDevice: BluetoothDevice, rssi: Int, mac:String) {
                 appendLog("扫描到匹配的蓝牙: ${bleDevice.name}, 信号强度：${rssi}, mac: $mac")
+            }
+
+            override fun onBleDeviceBonded(bondDeviceName: String) {
+                appendLog("检测到蓝牙${bondDeviceName}已配对，正在解除绑定")
             }
         })
     }

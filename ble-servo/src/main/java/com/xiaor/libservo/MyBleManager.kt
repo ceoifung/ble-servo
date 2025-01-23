@@ -1,6 +1,7 @@
 package com.xiaor.libservo
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
 import android.bluetooth.BluetoothAdapter
@@ -22,8 +23,6 @@ import com.clj.fastble.callback.BleWriteCallback
 import com.clj.fastble.data.BleDevice
 import com.clj.fastble.data.BleScanState
 import com.clj.fastble.exception.BleException
-import com.clj.fastble.scan.BleScanRuleConfig
-import kotlin.math.log
 
 
 class MyBleManager {
@@ -146,7 +145,8 @@ class MyBleManager {
             }
         }
         disconnect()
-        bleStatusListener?.onStatusChanged(BleStatus.CONNECTING)
+        getBondedDevices()
+        bleStatusListener?.onStatusChanged(BleStatus.SCANNING)
         var isStartScan = false
         var isOnScanning = false
         var startConnecting = false
@@ -196,13 +196,17 @@ class MyBleManager {
             }
 
             override fun onScanFinished(scanResultList: List<BleDevice>) {
-                if (!startConnecting && autoConnect){
-                    Log.d(TAG, "onScanFinished: 开启了自动连接，但是没有找到任何设备")
-                    bleStatusListener?.onStatusChanged(BleStatus.FAILURE)
-                }
+//                优先NO_CALLBACK，如果检测到NO_CALLBACK，就不在往下执行了
                 if (isStartScan && !isOnScanning) {
                     Log.e(TAG, "onScanFinished: could not find callback wrapper")
                     bleStatusListener?.onStatusChanged(BleStatus.NO_CALLBACK)
+                    return
+                }
+//                如果没有自动连接，并且没有找到任何设备，就认为连接失败
+                if (!startConnecting && autoConnect){
+                    Log.d(TAG, "onScanFinished: 开启了自动连接，但是没有找到任何设备")
+                    bleStatusListener?.onStatusChanged(BleStatus.FAILURE)
+                    return
                 }
                 isStartScan = false
                 isOnScanning = false
@@ -538,6 +542,37 @@ class MyBleManager {
         }
     }
 
+    @SuppressLint("MissingPermission")
+    fun getBondedDevices(){
+        if (BleManager.getInstance().isBlueEnable){
+            val bondedDevices = BleManager.getInstance().bluetoothAdapter.bondedDevices
+            for (device in bondedDevices){
+                if (device.bondState == BluetoothDevice.BOND_BONDED){
+                    if (!device.name.isNullOrEmpty()){
+                        if (device.name.startsWith(bleName)){
+                            Log.w(TAG, "getBondedDevices: find device ${device.name} bonded, now unpair device" )
+                            bleStatusListener?.onBleDeviceBonded(device.name)
+                            unpairDevice(device)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 解绑设备
+     * @param device 蓝牙设备
+     */
+    private fun unpairDevice(device: BluetoothDevice) {
+        try {
+            val method = device.javaClass.getMethod("removeBond")
+            method.invoke(device)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     interface BleStatusListener {
         /**
          * 蓝牙连接状态回调
@@ -548,6 +583,11 @@ class MyBleManager {
          * 扫描到的能识别到的蓝牙设备
          */
         fun onBleDeviceFound(bleDevice: BluetoothDevice, rssi: Int, mac: String)
+
+        /**
+         * 符合条件的蓝牙设备的绑定回调
+         */
+        fun onBleDeviceBonded(bondDeviceName: String)
     }
 
     class BleReceiver : BroadcastReceiver() {
